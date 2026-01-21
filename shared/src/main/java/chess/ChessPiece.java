@@ -2,6 +2,7 @@ package chess;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Represents a single chess piece
@@ -46,6 +47,41 @@ public class ChessPiece {
     }
 
     /**
+     * @return the correct end moves for Bishops
+     */
+    public Collection<ChessMove> bishopMoves(ChessBoard board, ChessPosition myPosition) {
+        List<ChessMove> moves = new ArrayList<>();
+        ChessPiece bishop = board.getPiece(myPosition);
+
+        int[][] directions = {
+                {1, 1}, {1, -1}, {-1, 1}, {-1, -1}
+        };
+
+        for (int[] dir : directions) {
+            int row = myPosition.getRow() + dir[0];
+            int col = myPosition.getColumn() + dir[1];
+
+            while (row >= 1 && row <= 8 && col >= 1 && col <= 8) {
+                ChessPosition end = new ChessPosition(row, col);
+                ChessPiece target = board.getPiece(end);
+
+                if (target == null) {
+                    moves.add(new ChessMove(myPosition, end, null));
+                } else {
+                    if (target.getTeamColor() != bishop.getTeamColor()) {
+                        moves.add(new ChessMove(myPosition, end, null));
+                    }
+                    break;
+                }
+
+                row += dir[0];
+                col += dir[1];
+            }
+        }
+        return moves;
+    }
+
+    /**
      * Calculates all the positions a chess piece can move to
      * Does not take into account moves that are illegal due to leaving the king in
      * danger
@@ -55,7 +91,7 @@ public class ChessPiece {
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
         ChessPiece piece = board.getPiece(myPosition);
         if (piece.getPieceType() ==  PieceType.BISHOP) {
-            return List.of(new ChessMove(new ChessPosition(5,4), new ChessPosition(1,8), null));
+            return bishopMoves(board, myPosition);
         }
         return List.of();
     }
