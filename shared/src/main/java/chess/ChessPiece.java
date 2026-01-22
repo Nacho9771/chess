@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.ArrayList;
 import chess.pieces.*;
+import java.util.Objects;
 
 /**
  * Represents a single chess piece
@@ -35,6 +36,19 @@ public class ChessPiece {
         KNIGHT,
         ROOK,
         PAWN
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(pieceColor, type);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) { return true; }
+        if (obj == null || getClass() != obj.getClass()) { return false; }
+        ChessPiece that = (ChessPiece) obj;
+        return pieceColor.equals(that.pieceColor) && type.equals(that.type);
     }
 
     /**

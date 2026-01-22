@@ -51,7 +51,6 @@ public class BishopMoveTests {
         );
     }
 
-
     @Test
     public void bishopBlocked() {
         TestUtilities.validateMoves("""
