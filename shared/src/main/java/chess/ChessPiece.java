@@ -3,6 +3,7 @@ package chess;
 import java.util.Collection;
 import java.util.List;
 import java.util.ArrayList;
+import chess.pieces.*;
 
 /**
  * Represents a single chess piece
@@ -14,10 +15,14 @@ public class ChessPiece {
 
     private final ChessGame.TeamColor pieceColor;
     private final PieceType type;
+    private boolean moved;
+    private boolean enPassantable;
 
     public ChessPiece(ChessGame.TeamColor pieceColor, ChessPiece.PieceType type) {
         this.pieceColor = pieceColor;
         this.type = type;
+        moved = false;
+        enPassantable = false;
     }
 
     /**
@@ -46,39 +51,20 @@ public class ChessPiece {
         return type;
     }
 
-    /**
-     * @return the correct end moves for Bishops
-     */
-    public Collection<ChessMove> bishopMoves(ChessBoard board, ChessPosition myPosition) {
-        List<ChessMove> moves = new ArrayList<>();
-        ChessPiece bishop = board.getPiece(myPosition);
+    public void flagAsMoved() {
+        moved = true;
+    }
 
-        int[][] directions = {
-                {1, 1}, {1, -1}, {-1, 1}, {-1, -1}
-        };
+    public boolean ifMoved() {
+        return moved;
+    }
 
-        for (int[] dir : directions) {
-            int row = myPosition.getRow() + dir[0];
-            int col = myPosition.getColumn() + dir[1];
+    public void setEnPassantable(boolean ep) {
+        enPassantable = ep;
+    }
 
-            while (row >= 1 && row <= 8 && col >= 1 && col <= 8) {
-                ChessPosition end = new ChessPosition(row, col);
-                ChessPiece target = board.getPiece(end);
-
-                if (target == null) {
-                    moves.add(new ChessMove(myPosition, end, null));
-                } else {
-                    if (target.getTeamColor() != bishop.getTeamColor()) {
-                        moves.add(new ChessMove(myPosition, end, null));
-                    }
-                    break;
-                }
-
-                row += dir[0];
-                col += dir[1];
-            }
-        }
-        return moves;
+    public boolean isEnPassantable() {
+        return enPassantable;
     }
 
     /**
@@ -89,10 +75,20 @@ public class ChessPiece {
      * @return Collection of valid moves
      */
     public Collection<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
-        ChessPiece piece = board.getPiece(myPosition);
-        if (piece.getPieceType() ==  PieceType.BISHOP) {
-            return bishopMoves(board, myPosition);
+
+        AbstractPiece calc = switch (type) {
+            case KING -> new King();
+            case QUEEN -> new Queen();
+            case ROOK -> new Rook();
+            case BISHOP -> new Bishop();
+            case KNIGHT -> new Knight();
+            case PAWN -> new Pawn();
+        };
+
+        if (calc == null) {
+            return List.of();
         }
-        return List.of();
+
+        return calc.pieceMoves(board, myPosition);
     }
 }
