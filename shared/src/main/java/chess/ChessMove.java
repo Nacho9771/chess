@@ -28,15 +28,16 @@ public class ChessMove {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) { return true; }
-        if (obj == null || getClass() != obj.getClass()) { return false; }
-        ChessMove that = (ChessMove) obj;
+        if (this == obj) {return true;}
 
-        // See if the positions are the same
-        boolean samePositions = startPosition.equals(that.getStartPosition()) && endPosition.equals(that.getEndPosition());
+        if (!(obj instanceof ChessMove)) {return false;}
 
-        // If positions are the same, check the promotion piece too
-        return samePositions && promotionPiece == that.getPromotionPiece();
+        ChessMove other = (ChessMove) obj;
+        boolean sameStart = startPosition.equals(other.getStartPosition());
+        boolean sameEnd   = endPosition.equals(other.getEndPosition());
+        boolean samePromotion = promotionPiece == other.getPromotionPiece();
+
+        return sameStart && sameEnd && samePromotion;
     }
 
     /**
