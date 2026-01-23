@@ -6,41 +6,55 @@ import chess.*;
 public class Pawn implements AbstractPiece {
 
     @Override
-    public ArrayList<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
-        ArrayList<ChessMove> possibleMoves = new ArrayList<>();
+    public ArrayList<ChessMove> pieceMoves(ChessBoard board, ChessPosition start) {
 
-        int forward = board.getPiece(myPosition).getTeamColor() == ChessGame.TeamColor.WHITE ? 1 : -1;
+        ArrayList<ChessMove> moves = new ArrayList<>();
 
-        ChessPosition forwardPosition = new ChessPosition(myPosition.getRow() + forward, myPosition.getColumn());
-        if (forwardPosition.insideBoard() && board.getPiece(forwardPosition) == null) {
-            possibleMoves.add(new ChessMove(myPosition, forwardPosition, null));
-        }
+        ChessPiece pawn = board.getPiece(start);
+        int direction = (pawn.getTeamColor() == ChessGame.TeamColor.WHITE) ? 1 : -1;
+        int startRow = (direction == 1) ? 2 : 7;
+        int promotionRow = (direction == 1) ? 8 : 1;
 
-        ChessPosition forward2Position = new ChessPosition(myPosition.getRow() + 2 * forward, myPosition.getColumn());
-        if (myPosition.getRow() == (forward == 1 ? 2 : 7) && forward2Position.insideBoard()) {
-            if (board.getPiece(forwardPosition) == null && board.getPiece(forward2Position) == null) {
-                possibleMoves.add(new ChessMove(myPosition, forward2Position, null));
+        // Forward 1
+        ChessPosition forward1 = new ChessPosition(start.getRow() + direction, start.getColumn());
+
+        if (forward1.insideBoard() && board.getPiece(forward1) == null) {
+            moves.add(new ChessMove(start, forward1, null));
+
+            // Forward 2
+            ChessPosition forward2 = new ChessPosition(start.getRow() + 2 * direction, start.getColumn());
+
+            if (start.getRow() == startRow && board.getPiece(forward2) == null) {
+                moves.add(new ChessMove(start, forward2, null));
             }
         }
 
-        ChessPosition leftAttack = new ChessPosition(myPosition.getRow() + forward, myPosition.getColumn() - 1);
-        ChessPosition rightAttack = new ChessPosition(myPosition.getRow() + forward, myPosition.getColumn() + 1);
+        // Diagonal
+        ChessPosition leftCapture = new ChessPosition(start.getRow() + direction, start.getColumn() - 1);
 
-        if (leftAttack.insideBoard() && board.getPiece(leftAttack) != null &&
-                board.getPiece(myPosition).getTeamColor() != board.getPiece(leftAttack).getTeamColor()) {
-            possibleMoves.add(new ChessMove(myPosition, leftAttack, null));
+        ChessPosition rightCapture = new ChessPosition(start.getRow() + direction, start.getColumn() + 1);
+
+        if (leftCapture.insideBoard()) {
+            ChessPiece leftPiece = board.getPiece(leftCapture);
+            if (leftPiece != null && leftPiece.getTeamColor() != pawn.getTeamColor()) {
+                moves.add(new ChessMove(start, leftCapture, null));
+            }
         }
 
-        if (rightAttack.insideBoard() && board.getPiece(rightAttack) != null &&
-                board.getPiece(myPosition).getTeamColor() != board.getPiece(rightAttack).getTeamColor()) {
-            possibleMoves.add(new ChessMove(myPosition, rightAttack, null));
+        if (rightCapture.insideBoard()) {
+            ChessPiece rightPiece = board.getPiece(rightCapture);
+            if (rightPiece != null && rightPiece.getTeamColor() != pawn.getTeamColor()) {
+                moves.add(new ChessMove(start, rightCapture, null));
+            }
         }
 
+        // Promotions
         ArrayList<ChessMove> finalMoves = new ArrayList<>();
-        for (ChessMove move : possibleMoves) {
-            if (move.getEndPosition().getRow() == (forward == 1 ? 8 : 1)) {
-                ChessPosition start = move.getStartPosition();
+
+        for (ChessMove move : moves) {
+            if (move.getEndPosition().getRow() == promotionRow) {
                 ChessPosition end = move.getEndPosition();
+
                 finalMoves.add(new ChessMove(start, end, ChessPiece.PieceType.QUEEN));
                 finalMoves.add(new ChessMove(start, end, ChessPiece.PieceType.ROOK));
                 finalMoves.add(new ChessMove(start, end, ChessPiece.PieceType.BISHOP));
