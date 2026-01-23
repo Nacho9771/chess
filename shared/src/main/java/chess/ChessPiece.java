@@ -41,13 +41,8 @@ public class ChessPiece {
     @Override
     public boolean equals(Object obj) {
 
-        if (this == obj) {
-            return true;
-        }
-
-        if (!(obj instanceof ChessPiece)) {
-            return false;
-        }
+        if (this == obj) {return true;}
+        if (!(obj instanceof ChessPiece)) {return false;}
 
         ChessPiece other = (ChessPiece) obj;
 
