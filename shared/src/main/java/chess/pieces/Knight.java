@@ -6,30 +6,29 @@ import chess.*;
 public class Knight implements AbstractPiece {
 
     @Override
-    public ArrayList<ChessMove> pieceMoves(ChessBoard board, ChessPosition myPosition) {
-        ArrayList<ChessMove> possibleMoves = new ArrayList<>();
+    public ArrayList<ChessMove> pieceMoves(ChessBoard board, ChessPosition start) {
+
+        ArrayList<ChessMove> moves = new ArrayList<>();
+        ChessPiece knight = board.getPiece(start);
 
         int[][] jumps = {
-                {1,2},{1,-2},{-1,2},{-1,-2},
-                {2,1},{2,-1},{-2,1},{-2,-1}
+            { 1,  2}, { 1, -2}, {-1,  2}, {-1, -2},
+            { 2,  1}, { 2, -1}, {-2,  1}, {-2, -1}
         };
 
-        for (int[] j : jumps) {
-            ChessPosition newPosition = new ChessPosition(
-                    myPosition.getRow() + j[0],
-                    myPosition.getColumn() + j[1]);
-
-            if (!newPosition.insideBoard()) continue;
-
-            if (board.getPiece(newPosition) != null &&
-                    board.getPiece(myPosition).getTeamColor() ==
-                            board.getPiece(newPosition).getTeamColor()) {
+        for (int[] jump : jumps) {
+            ChessPosition end = new ChessPosition(start.getRow() + jump[0], start.getColumn() + jump[1]);
+            if (!end.insideBoard()) {
                 continue;
             }
 
-            possibleMoves.add(new ChessMove(myPosition, newPosition, null));
+            ChessPiece pieceOnSquare = board.getPiece(end);
+            if (pieceOnSquare != null && pieceOnSquare.getTeamColor() == knight.getTeamColor()) {
+                continue;
+            }
+            moves.add(new ChessMove(start, end, null));
         }
 
-        return possibleMoves;
+        return moves;
     }
 }
