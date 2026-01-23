@@ -2,7 +2,6 @@ package chess;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.ArrayList;
 import chess.pieces.*;
 import java.util.Objects;
 
@@ -16,14 +15,10 @@ public class ChessPiece {
 
     private final ChessGame.TeamColor pieceColor;
     private final PieceType type;
-    private boolean moved;
-    private boolean enPassantable;
 
     public ChessPiece(ChessGame.TeamColor pieceColor, ChessPiece.PieceType type) {
         this.pieceColor = pieceColor;
         this.type = type;
-        moved = false;
-        enPassantable = false;
     }
 
     /**
@@ -45,10 +40,19 @@ public class ChessPiece {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) { return true; }
-        if (obj == null || getClass() != obj.getClass()) { return false; }
-        ChessPiece that = (ChessPiece) obj;
-        return pieceColor.equals(that.pieceColor) && type.equals(that.type);
+
+        if (this == obj) {
+            return true;
+        }
+
+        if (!(obj instanceof ChessPiece)) {
+            return false;
+        }
+
+        ChessPiece other = (ChessPiece) obj;
+
+        return this.pieceColor.equals(other.pieceColor)
+                && this.type.equals(other.type);
     }
 
     /**
@@ -63,22 +67,6 @@ public class ChessPiece {
      */
     public PieceType getPieceType() {
         return type;
-    }
-
-    public void flagAsMoved() {
-        moved = true;
-    }
-
-    public boolean ifMoved() {
-        return moved;
-    }
-
-    public void setEnPassantable(boolean ep) {
-        enPassantable = ep;
-    }
-
-    public boolean isEnPassantable() {
-        return enPassantable;
     }
 
     /**
