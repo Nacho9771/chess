@@ -12,33 +12,37 @@ public class Lines {
         this.directions = directions;
     }
 
-    ArrayList<ChessMove> getPositions(ChessPosition myPosition, ChessBoard board) {
-        ArrayList<ChessMove> possibleMoves = new ArrayList<>();
+    ArrayList<ChessMove> getPositions(ChessPosition start, ChessBoard board) {
+        ArrayList<ChessMove> moves = new ArrayList<>();
 
         for (int[] direction : directions) {
-            ChessPosition newPosition = new ChessPosition(myPosition.getRow(), myPosition.getColumn());
-            boolean capturing = false;
-            do {
-                newPosition = new ChessPosition(newPosition.getRow() + direction[0], newPosition.getColumn() + direction[1]);
+            int rowStep = direction[0];
+            int colStep = direction[1];
 
-                if (!newPosition.insideBoard()) {
+            ChessPosition currentPosition =
+                    new ChessPosition(start.getRow(), start.getColumn());
+
+            while (true) {
+                currentPosition = new ChessPosition(
+                        currentPosition.getRow() + rowStep,
+                        currentPosition.getColumn() + colStep
+                );
+
+                if (!currentPosition.insideBoard()) {
                     break;
                 }
 
-                if (board.getPiece(newPosition) != null) {
-                    if (board.getPiece(myPosition).getTeamColor() == board.getPiece(newPosition).getTeamColor()) {
-                        break;
-                    } else {
-                        capturing = true;
-                    }
+                var pieceOnSquare = board.getPiece(currentPosition);
+                if (pieceOnSquare != null && pieceOnSquare.getTeamColor() == board.getPiece(start).getTeamColor()) {
+                    break;
                 }
-
-                possibleMoves.add(new ChessMove(myPosition, newPosition, null));
-            } while (!capturing);
+                moves.add(new ChessMove(start, currentPosition, null));
+                if (pieceOnSquare != null) {
+                    break;
+                }
+            }
         }
 
-        return possibleMoves;
+        return moves;
     }
-
-
 }
