@@ -1,5 +1,4 @@
 package chess.pieces;
-
 import java.util.ArrayList;
 import chess.*;
 
@@ -10,7 +9,7 @@ public class King implements AbstractPiece {
         ArrayList<ChessMove> possibleMoves = new ArrayList<>();
 
         int[][] adjacent = {
-                {-1,-1},{-1,0},{-1,1},{0,-1},{0,1},{1,-1},{1,0},{1,1}
+                {-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1}, {0,-1}
         };
 
         for (int[] i : adjacent) {

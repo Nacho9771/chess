@@ -40,14 +40,14 @@ public class ChessPiece {
 
     @Override
     public boolean equals(Object obj) {
-
         if (this == obj) {return true;}
         if (!(obj instanceof ChessPiece)) {return false;}
 
         ChessPiece other = (ChessPiece) obj;
+        boolean sameColor = this.pieceColor.equals(other.pieceColor);
+        boolean sameType = this.type.equals(other.type);
 
-        return this.pieceColor.equals(other.pieceColor)
-                && this.type.equals(other.type);
+        return sameType && sameColor;
     }
 
     /**
