@@ -25,10 +25,11 @@ public class ChessPosition {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) { return true; }
-        if (obj == null || getClass() != obj.getClass()) { return false; }
-        ChessPosition that = (ChessPosition) obj;
-        return row == that.getRow() && col == that.getColumn();
+        if (this == obj) {return true;}
+        if (!(obj instanceof ChessPosition)) {return false;}
+
+        ChessPosition position = (ChessPosition) obj;
+        return (row == position.getRow() && col == position.getColumn());
     }
 
     public int getRow() {

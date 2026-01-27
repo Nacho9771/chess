@@ -1,7 +1,6 @@
 package chess.pieces;
-import chess.*;
-
 import java.util.ArrayList;
+import chess.*;
 
 public class Lines {
     private final int[][] directions;
