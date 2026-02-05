@@ -1,5 +1,6 @@
 package chess;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 /**
@@ -54,7 +55,26 @@ public class ChessGame {
      * startPosition
      */
     public Collection<ChessMove> validMoves(ChessPosition startPosition) {
-        throw new RuntimeException("Not implemented");
+        if (board.getPiece(startPosition) == null) {return null;}
+
+        ArrayList<ChessMove> moves = (ArrayList<ChessMove>) board.getPiece(startPosition).pieceMoves(board, startPosition);
+        ArrayList<ChessMove> availableMoves = new ArrayList<>();
+        ChessGame.TeamColor team = board.getPiece(startPosition).getTeamColor();
+
+        for (int i = 0; i < moves.size(); ++i) {
+            ChessGame game = new ChessGame();
+            game.setBoard(board);
+            ChessPiece.PieceType promotionPiece = moves.get(i).getPromotionPiece();
+            ChessPiece piece = game.getBoard().getPiece(moves.get(i).getStartPosition());
+            ChessPiece newPiece = promotionPiece == null ? piece : new ChessPiece(team, promotionPiece);
+
+            game.getBoard().addPiece(moves.get(i).getEndPosition(), newPiece);
+            game.getBoard().removePiece(moves.get(i).getStartPosition());
+            if (!game.isInCheck(team)) {
+                availableMoves.add(moves.get(i));
+            }
+        }
+        return availableMoves;
     }
 
     /**
@@ -73,8 +93,9 @@ public class ChessGame {
      * @param teamColor which team to check for check
      * @return True if the specified team is in check
      */
-    public boolean isInCheck(TeamColor teamColor) {
-        throw new RuntimeException("Not implemented");
+    public boolean isInCheck(ChessGame.TeamColor teamColor) {
+        ChessPosition kingPosition = board.findKing(teamColor);
+        return board.isAttacked(kingPosition, (teamColor == TeamColor.WHITE ? TeamColor.BLACK : TeamColor.WHITE));
     }
 
     /**

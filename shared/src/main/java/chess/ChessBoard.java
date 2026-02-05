@@ -34,6 +34,16 @@ public class ChessBoard {
         return squares[position.getRow() - 1][position.getColumn() - 1];
     }
 
+    /**
+     * Removes a chess piece on the chessboard
+     *
+     * @param position The position to remove the piece from
+     * @return nothing lol
+     */
+    public void removePiece(ChessPosition position) {
+        squares[position.getRow() - 1][position.getColumn() - 1] = null;
+    }
+
     @Override
     public int hashCode() {
         int code = 0;
@@ -98,4 +108,17 @@ public class ChessBoard {
             addPiece(new ChessPosition(8, col), new ChessPiece(ChessGame.TeamColor.BLACK, backRank[col - 1]));
         }
     }
+
+    public ChessPosition findKing(ChessGame.TeamColor teamColor) {
+        for (int i = 0; i < squares.length; ++i) {
+            for (int j = 0; j < squares[i].length; ++j) {
+                ChessPiece piece = getPiece(new ChessPosition(i+1,j+1));
+                if (piece != null && piece.getTeamColor() == teamColor && piece.getPieceType() == ChessPiece.PieceType.KING) {
+                    return new ChessPosition(i + 1,j + 1);
+                }
+            }
+        }
+        return null;
+    }
+
 }
