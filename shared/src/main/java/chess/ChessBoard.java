@@ -1,5 +1,7 @@
 package chess;
 
+import java.util.ArrayList;
+
 /**
  * A chessboard that can hold and rearrange chess pieces.
  * <p>
@@ -84,6 +86,26 @@ public class ChessBoard {
         return true;
     }
 
+    private ChessPiece copyPiece(ChessPiece oldPiece) {
+        return new ChessPiece(oldPiece.getTeamColor(), oldPiece.getPieceType());
+    }
+
+    public void setBoard(ChessBoard newBoard) {
+        squares = new ChessPiece[8][8];
+
+        for (int row = 1; row <= 8; row++) {
+            for (int col = 1; col <= 8; col++) {
+                ChessPosition pos = new ChessPosition(row, col);
+
+                ChessPiece oldPiece = newBoard.getPiece(pos);
+                if (oldPiece == null) { continue; }
+
+                ChessPiece newPiece = copyPiece(oldPiece);
+                addPiece(pos, newPiece);
+            }
+        }
+    }
+
     /**
      * Sets the board to the default starting board
      * (How the game of chess normally starts)
@@ -119,6 +141,39 @@ public class ChessBoard {
             }
         }
         return null;
+    }
+
+    public boolean isAttacked(ChessPosition target, ChessGame.TeamColor attackingTeam) {
+        for (ChessPosition piecePosition : findAllPieces(attackingTeam)) {
+            ChessPiece piece = getPiece(piecePosition);
+
+            for (ChessMove move : piece.pieceMoves(this, piecePosition)) {
+                if (target.equals(move.getEndPosition())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public ArrayList<ChessPosition> findAllPieces(ChessGame.TeamColor teamColor) {
+        ArrayList<ChessPosition> positions = new ArrayList<>();
+
+        for (int row = 0; row < squares.length; row++) {
+            for (int col = 0; col < squares[row].length; col++) {
+                addIfMatchingTeam(positions, row, col, teamColor);
+            }
+        }
+        return positions;
+    }
+
+    private void addIfMatchingTeam(ArrayList<ChessPosition> positions, int row, int col, ChessGame.TeamColor teamColor) {
+        ChessPosition position = new ChessPosition(row + 1, col + 1);
+        ChessPiece piece = getPiece(position);
+
+        if (piece != null && piece.getTeamColor() == teamColor) {
+            positions.add(position);
+        }
     }
 
 }
