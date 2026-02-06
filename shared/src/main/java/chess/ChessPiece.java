@@ -16,11 +16,13 @@ public class ChessPiece {
     private final ChessGame.TeamColor pieceColor;
     private final PieceType type;
     private boolean moved;
+    private boolean enPassantable;
 
     public ChessPiece(ChessGame.TeamColor pieceColor, ChessPiece.PieceType type) {
         this.pieceColor = pieceColor;
         this.type = type;
         moved = false;
+        enPassantable = false;
     }
 
     /**
@@ -94,5 +96,14 @@ public class ChessPiece {
     public void flagAsMoved() {
         moved = true;
     }
+
+    public void setEnPassantable(boolean enpassant) {
+        enPassantable = enpassant;
+    }
+
+    public boolean isEnPassantable() {
+        return enPassantable;
+    }
+
 
 }

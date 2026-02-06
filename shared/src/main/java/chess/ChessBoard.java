@@ -176,4 +176,16 @@ public class ChessBoard {
         }
     }
 
+    public void resetEnPassant() {
+        for (int row = 0; row < squares.length; row++) {
+            for (int col = 0; col < squares[row].length; col++) {
+                ChessPosition position = new ChessPosition(row + 1, col + 1);
+                ChessPiece piece = getPiece(position);
+                if (piece != null) {
+                    piece.setEnPassantable(false);
+                }
+            }
+        }
+    }
+
 }
