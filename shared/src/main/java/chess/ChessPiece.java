@@ -15,10 +15,12 @@ public class ChessPiece {
 
     private final ChessGame.TeamColor pieceColor;
     private final PieceType type;
+    private boolean moved;
 
     public ChessPiece(ChessGame.TeamColor pieceColor, ChessPiece.PieceType type) {
         this.pieceColor = pieceColor;
         this.type = type;
+        moved = false;
     }
 
     /**
@@ -88,4 +90,9 @@ public class ChessPiece {
 
         return calc.pieceMoves(board, myPosition);
     }
+
+    public void flagAsMoved() {
+        moved = true;
+    }
+
 }
