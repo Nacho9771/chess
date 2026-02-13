@@ -16,24 +16,22 @@ public class Lines {
             int rowStep = direction[0];
             int colStep = direction[1];
 
-            ChessPosition currentPosition =
-                    new ChessPosition(start.getRow(), start.getColumn());
+            ChessPosition myPosition = new ChessPosition(start.getRow(), start.getColumn());
 
             while (true) {
-                currentPosition = new ChessPosition(
-                        currentPosition.getRow() + rowStep,
-                        currentPosition.getColumn() + colStep
-                );
+                myPosition = new ChessPosition(myPosition.getRow() + rowStep, myPosition.getColumn() + colStep);
 
-                if (!currentPosition.insideBoard()) {
+                // Checks for boundaries
+                if (!myPosition.insideBoard()) {
                     break;
                 }
 
-                var pieceOnSquare = board.getPiece(currentPosition);
+                // Checks for available square/capture
+                var pieceOnSquare = board.getPiece(myPosition);
                 if (pieceOnSquare != null && pieceOnSquare.getTeamColor() == board.getPiece(start).getTeamColor()) {
                     break;
                 }
-                moves.add(new ChessMove(start, currentPosition, null));
+                moves.add(new ChessMove(start, myPosition, null));
                 if (pieceOnSquare != null) {
                     break;
                 }
