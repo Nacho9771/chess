@@ -1,20 +1,17 @@
 package dataaccess;
+
 import model.GameData;
 
-import java.util.ArrayList;
+import java.util.Collection;
 
 public interface GameDAO {
+    int createGame(GameData gameData) throws DataAccessException;
 
-    boolean isGame(String GameData) throws DataAccessException;
+    GameData getGame(int gameID) throws DataAccessException;
 
-    public void createGame(GameData gameData) throws DataAccessException;
+    void updateGame(GameData newGameData) throws DataAccessException;
 
-    public GameData getGame(int gameID) throws DataAccessException;
+    Collection<GameData> listGames() throws DataAccessException;
 
-    public void updateGame(int gameID, GameData newGameData) throws DataAccessException;
-
-    public ArrayList<GameData> listGames() throws DataAccessException;
-
-    public void clear() throws DataAccessException;
-
+    void clear() throws DataAccessException;
 }
