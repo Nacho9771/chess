@@ -8,7 +8,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import service.user.LoginRequest;
 import service.user.RegisterRequest;
-import service.user.UserService;
 
 import static org.junit.jupiter.api.Assertions.*;
 

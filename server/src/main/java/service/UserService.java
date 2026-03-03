@@ -1,8 +1,9 @@
-package service.user;
+package service;
 
 import dataaccess.*;
 import model.*;
-import service.*;
+import service.user.LoginRequest;
+import service.user.RegisterRequest;
 
 public class UserService {
 
@@ -41,16 +42,13 @@ public class UserService {
     }
 
     private void validateRegister(RegisterRequest r) throws ServiceException {
-        if (r == null || isBlank(r.username())
-                || isBlank(r.password())
-                || isBlank(r.email())) {
+        if (r == null || isBlank(r.username()) || isBlank(r.password()) || isBlank(r.email())) {
             throw error(400, "Error: bad request");
         }
     }
 
     private void validateLogin(LoginRequest r) throws ServiceException {
-        if (r == null || isBlank(r.username())
-                || isBlank(r.password())) {
+        if (r == null || isBlank(r.username()) || isBlank(r.password())) {
             throw error(400, "Error: bad request");
         }
     }

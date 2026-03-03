@@ -11,7 +11,6 @@ import service.create.CreateGameResult;
 import service.join.JoinGameRequest;
 import service.list.ListGamesResult;
 import service.user.RegisterRequest;
-import service.user.UserService;
 
 import static org.junit.jupiter.api.Assertions.*;
 
