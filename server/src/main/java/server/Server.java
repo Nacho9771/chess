@@ -2,14 +2,25 @@ package server;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import dataaccess.*;
+import dataaccess.AuthDAO;
+import dataaccess.DataAccessException;
+import dataaccess.GameDAO;
+import dataaccess.MemoryAuthDAO;
+import dataaccess.MemoryGameDAO;
+import dataaccess.MemoryUserDAO;
+import dataaccess.UserDAO;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
-import service.*;
-import service.create.*;
-import service.join.*;
-import service.list.*;
-import service.user.*;
+import service.ClearService;
+import service.ErrorResult;
+import service.GameService;
+import service.ServiceException;
+import service.UserService;
+import service.create.CreateGameRequest;
+import service.join.JoinGameRequest;
+import service.list.ListGamesResult;
+import service.user.LoginRequest;
+import service.user.RegisterRequest;
 import java.util.Map;
 
 public class Server {
@@ -21,7 +32,9 @@ public class Server {
     private final ClearService clearService;
 
     public Server() {
-        javalin = Javalin.create(config -> config.staticFiles.add("web"));
+        javalin = Javalin.create(config -> {
+            config.staticFiles.add("web");
+        });
 
         // Initialize DAOs and services
         UserDAO userDAO = new MemoryUserDAO();
@@ -88,7 +101,7 @@ public class Server {
     }
 
     /**
-     * Generic JSON request handler to reduce repetition
+     * Generic JSON request handler to reduce repetition.
      */
     private <T, R> void handleJsonRequest(Context ctx, Class<T> requestClass, ServiceHandler<T, R> serviceMethod) {
         try {

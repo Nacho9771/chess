@@ -1,9 +1,12 @@
 package service;
 
-import dataaccess.*;
+import dataaccess.MemoryAuthDAO;
+import dataaccess.MemoryGameDAO;
+import dataaccess.MemoryUserDAO;
 import org.junit.jupiter.api.Test;
 import service.create.CreateGameRequest;
-import service.user.*;
+import service.user.RegisterRequest;
+
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class ClearServiceTest {

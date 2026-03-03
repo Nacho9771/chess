@@ -12,7 +12,10 @@ import service.join.JoinGameRequest;
 import service.list.ListGamesResult;
 import service.user.RegisterRequest;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GameServiceTest {
     private UserService userService;

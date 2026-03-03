@@ -1,7 +1,10 @@
 package service;
 
-import dataaccess.*;
-import model.*;
+import dataaccess.AuthDAO;
+import dataaccess.DataAccessException;
+import dataaccess.UserDAO;
+import model.AuthData;
+import model.UserData;
 import service.user.LoginRequest;
 import service.user.RegisterRequest;
 
@@ -60,10 +63,14 @@ public class UserService {
     }
 
     private AuthData requireAuth(String token) throws ServiceException, DataAccessException {
-        if (isBlank(token)) {throw error(401, "Error: unauthorized");}
+        if (isBlank(token)) {
+            throw error(401, "Error: unauthorized");
+        }
 
         AuthData auth = authDAO.getAuth(token);
-        if (auth == null) {throw error(401, "Error: unauthorized");}
+        if (auth == null) {
+            throw error(401, "Error: unauthorized");
+        }
 
         return auth;
     }

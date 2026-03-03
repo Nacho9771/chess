@@ -2,28 +2,30 @@ package dataaccess;
 
 import chess.ChessGame;
 import model.GameData;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MemoryGameDAO implements GameDAO {
 
     private final Map<Integer, GameData> games = new HashMap<>();
-    private int nextGameID = 1;
+    private int nextGameId = 1;
 
     @Override
     public int createGame(GameData gameData) throws DataAccessException {
         if (gameData == null || gameData.gameName() == null) {
             throw new DataAccessException("Invalid game");
         }
-        int gameID = nextGameID++;
-        GameData storedGame = new GameData(gameID, gameData.whiteUsername(), gameData.blackUsername(),
+        int gameId = nextGameId++;
+        GameData storedGame = new GameData(gameId, gameData.whiteUsername(), gameData.blackUsername(),
                 gameData.gameName(), gameData.game() == null ? new ChessGame() : gameData.game());
-        games.put(gameID, storedGame);
-        return gameID;
+        games.put(gameId, storedGame);
+        return gameId;
     }
 
     @Override
-    public GameData getGame(int gameID) {
-        return games.get(gameID);
+    public GameData getGame(int gameId) {
+        return games.get(gameId);
     }
 
     @Override
@@ -34,6 +36,7 @@ public class MemoryGameDAO implements GameDAO {
         games.put(newGameData.gameID(), newGameData);
     }
 
+    @Override
     public Collection<GameData> listGames() {
         return games.values();
     }
@@ -41,7 +44,7 @@ public class MemoryGameDAO implements GameDAO {
     @Override
     public void clear() {
         games.clear();
-        nextGameID = 1;
+        nextGameId = 1;
     }
 
 }

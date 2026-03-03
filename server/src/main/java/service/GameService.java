@@ -1,11 +1,16 @@
 package service;
 
 import chess.ChessGame;
-import dataaccess.*;
-import model.*;
-import service.create.*;
-import service.join.*;
-import service.list.*;
+import dataaccess.AuthDAO;
+import dataaccess.DataAccessException;
+import dataaccess.GameDAO;
+import model.AuthData;
+import model.GameData;
+import service.create.CreateGameRequest;
+import service.create.CreateGameResult;
+import service.join.JoinGameRequest;
+import service.list.GameListEntry;
+import service.list.ListGamesResult;
 import java.util.ArrayList;
 
 public class GameService {
@@ -28,7 +33,10 @@ public class GameService {
         return new ListGamesResult(entries);
     }
 
-    public CreateGameResult createGame(String token, CreateGameRequest req) throws ServiceException, DataAccessException {
+    public CreateGameResult createGame(
+            String token,
+            CreateGameRequest req
+    ) throws ServiceException, DataAccessException {
         requireAuth(token);
         validateCreate(req);
         int id = gameDAO.createGame(
@@ -45,10 +53,14 @@ public class GameService {
         String black = game.blackUsername();
 
         if ("WHITE".equals(req.playerColor())) {
-            if (white != null) throw error(403, "Error: already taken");
+            if (white != null) {
+                throw error(403, "Error: already taken");
+            }
             white = auth.username();
         } else {
-            if (black != null) throw error(403, "Error: already taken");
+            if (black != null) {
+                throw error(403, "Error: already taken");
+            }
             black = auth.username();
         }
 
@@ -62,8 +74,7 @@ public class GameService {
     }
 
     private void validateJoin(JoinGameRequest r) throws ServiceException {
-        if (r == null || r.gameID() == null
-                || !isValidColor(r.playerColor())) {
+        if (r == null || r.gameID() == null || !isValidColor(r.playerColor())) {
             throw error(400, "Error: bad request");
         }
     }
@@ -77,10 +88,14 @@ public class GameService {
     }
 
     private AuthData requireAuth(String token) throws ServiceException, DataAccessException {
-        if (isBlank(token)) {throw error(401, "Error: unauthorized");}
+        if (isBlank(token)) {
+            throw error(401, "Error: unauthorized");
+        }
 
         AuthData auth = authDAO.getAuth(token);
-        if (auth == null) {throw error(401, "Error: unauthorized");}
+        if (auth == null) {
+            throw error(401, "Error: unauthorized");
+        }
 
         return auth;
     }
