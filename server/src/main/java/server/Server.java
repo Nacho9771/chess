@@ -11,7 +11,6 @@ import dataaccess.MemoryUserDAO;
 import dataaccess.UserDAO;
 import io.javalin.http.Context;
 import io.javalin.*;
-import org.junit.jupiter.api.AfterAll;
 import service.*;
 import service.create.CreateGameRequest;
 import service.create.CreateGameResult;
@@ -55,7 +54,6 @@ public class Server {
         return javalin.port();
     }
 
-    @AfterAll
     public void stop() {
         javalin.stop();
     }
