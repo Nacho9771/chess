@@ -6,6 +6,9 @@ import dataaccess.MemoryAuthDAO;
 import dataaccess.MemoryGameDAO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import service.create.CreateGameRequest;
+import service.create.CreateGameResult;
+import service.join.JoinGameRequest;
 import service.list.ListGamesResult;
 import service.user.RegisterRequest;
 import service.user.UserService;
@@ -41,10 +44,32 @@ public class GameServiceTest {
     }
 
     @Test
+    void createGamePositive() throws Exception {
+        CreateGameResult result = gameService.createGame(authToken, new CreateGameRequest("test game"));
+        assertNotNull(result.gameID());
+        assertTrue(result.gameID() > 0);
+    }
+
+    @Test
+    void createGameNegative() {
+        ServiceException ex = assertThrows(ServiceException.class,
+                () -> gameService.createGame(authToken, new CreateGameRequest(null)));
+        assertEquals(400, ex.statusCode());
+    }
+
+    @Test
     void joinGamePositive() throws Exception {
+        int gameID = gameService.createGame(authToken, new CreateGameRequest("joinable")).gameID();
+        gameService.joinGame(authToken, new JoinGameRequest("WHITE", gameID));
+        ListGamesResult result = gameService.listGames(authToken);
+        assertEquals("gamer", result.games().getFirst().whiteUsername());
     }
 
     @Test
     void joinGameNegative() throws Exception {
+        int gameID = gameService.createGame(authToken, new CreateGameRequest("joinable")).gameID();
+        ServiceException ex = assertThrows(ServiceException.class,
+                () -> gameService.joinGame(authToken, new JoinGameRequest("GREEN", gameID)));
+        assertEquals(400, ex.statusCode());
     }
 }
