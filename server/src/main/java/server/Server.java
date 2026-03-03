@@ -11,7 +11,11 @@ import dataaccess.MemoryUserDAO;
 import dataaccess.UserDAO;
 import io.javalin.http.Context;
 import io.javalin.*;
+import org.junit.jupiter.api.AfterAll;
 import service.*;
+import service.create.CreateGameRequest;
+import service.create.CreateGameResult;
+import service.join.JoinGameRequest;
 import service.list.ListGamesResult;
 import service.user.LoginRequest;
 import service.user.RegisterRequest;
@@ -51,6 +55,7 @@ public class Server {
         return javalin.port();
     }
 
+    @AfterAll
     public void stop() {
         javalin.stop();
     }
@@ -115,9 +120,31 @@ public class Server {
     }
 
     private void handleCreateGame(Context ctx) {
+        try {
+            CreateGameRequest request = gson.fromJson(ctx.body(), CreateGameRequest.class);
+            CreateGameResult result = gameService.createGame(ctx.header("authorization"), request);
+            writeJson(ctx, 200, result);
+        } catch (JsonSyntaxException | NullPointerException ex) {
+            writeJson(ctx, 400, new ErrorResult("Error: bad request"));
+        } catch (ServiceException ex) {
+            writeJson(ctx, ex.statusCode(), new ErrorResult(ex.getMessage()));
+        } catch (DataAccessException ex) {
+            internalError(ctx, ex);
+        }
     }
 
     private void handleJoinGame(Context ctx) {
+        try {
+            JoinGameRequest request = gson.fromJson(ctx.body(), JoinGameRequest.class);
+            gameService.joinGame(ctx.header("authorization"), request);
+            writeJson(ctx, 200, Map.of());
+        } catch (JsonSyntaxException | NullPointerException ex) {
+            writeJson(ctx, 400, new ErrorResult("Error: bad request"));
+        } catch (ServiceException ex) {
+            writeJson(ctx, ex.statusCode(), new ErrorResult(ex.getMessage()));
+        } catch (DataAccessException ex) {
+            internalError(ctx, ex);
+        }
     }
 
     private void internalError(Context ctx, Exception ex) {
