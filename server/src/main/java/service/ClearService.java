@@ -17,6 +17,7 @@ public class ClearService {
     }
 
     public void clear() throws DataAccessException {
+        // Clear all persisted server state.
         userDAO.clear();
         authDAO.clear();
         gameDAO.clear();

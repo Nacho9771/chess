@@ -40,6 +40,7 @@ public class UserService {
     }
 
     public void logout(String authToken) throws ServiceException, DataAccessException {
+        // Remove the auth token to invalidate the session.
         AuthData auth = ServiceUtil.requireAuth(authToken, authDAO);
         authDAO.deleteAuth(auth.authToken());
     }
@@ -58,6 +59,7 @@ public class UserService {
     }
 
     private AuthResult createAuthForUser(String username) throws DataAccessException {
+        // Create a fresh auth token on each login or registration.
         String token = TokenUtil.generateToken();
         authDAO.createAuth(new AuthData(token, username));
         return new AuthResult(username, token);

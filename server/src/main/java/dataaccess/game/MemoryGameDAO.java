@@ -8,6 +8,7 @@ import java.util.Map;
 
 public class MemoryGameDAO implements GameDAO {
 
+    // In-memory game store with a simple incrementing ID.
     private final Map<Integer, GameData> games = new HashMap<>();
     private int nextGameId = 1;
 

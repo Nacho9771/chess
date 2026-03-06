@@ -6,6 +6,7 @@ import java.util.Map;
 
 public class MemoryUserDAO implements UserDAO {
 
+    // In-memory user store for simple use cases and tests.
     private final Map<String, UserData> users = new HashMap<>();
 
     @Override

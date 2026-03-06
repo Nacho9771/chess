@@ -52,6 +52,7 @@ public class GameService {
         String white = game.whiteUsername();
         String black = game.blackUsername();
 
+        // Enforce a single player per color.
         if ("WHITE".equals(req.playerColor())) {
             if (white != null) {
                 throw ServiceUtil.alreadyTaken();

@@ -57,6 +57,7 @@ public class Server {
     // ------------------------ Handlers ------------------------
 
     private void registerRoutes() {
+        // Route handlers delegate to services and return JSON results.
         javalin.delete("/db", this::handleClear);
         javalin.post("/user", ctx -> handleJsonRequest(ctx, RegisterRequest.class, userService::register));
         javalin.post("/session", ctx -> handleJsonRequest(ctx, LoginRequest.class, userService::login));

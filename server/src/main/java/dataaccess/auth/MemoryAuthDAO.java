@@ -6,6 +6,7 @@ import java.util.Map;
 
 public class MemoryAuthDAO implements AuthDAO {
 
+    // In-memory auth token store for simple use cases and tests.
     private final Map<String, AuthData> auths = new HashMap<>();
 
     @Override
