@@ -1,4 +1,3 @@
 package service;
 
-public record AuthResult(String username, String authToken) {
-}
+public record AuthResult(String username, String authToken) {}

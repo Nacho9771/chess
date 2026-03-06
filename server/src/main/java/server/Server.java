@@ -36,26 +36,13 @@ public class Server {
             config.staticFiles.add("web");
         });
 
-        // Initialize DAOs and services
         UserDAO userDAO = new MemoryUserDAO();
         AuthDAO authDAO = new MemoryAuthDAO();
         GameDAO gameDAO = new MemoryGameDAO();
         userService = new UserService(userDAO, authDAO);
         gameService = new GameService(authDAO, gameDAO);
         clearService = new ClearService(userDAO, authDAO, gameDAO);
-
-        // Registering API Routes
-        javalin.delete("/db", this::handleClear);
-        javalin.post("/user", ctx -> handleJsonRequest(ctx, RegisterRequest.class, userService::register));
-        javalin.post("/session", ctx -> handleJsonRequest(ctx, LoginRequest.class, userService::login));
-        javalin.delete("/session", this::handleLogout);
-        javalin.get("/game", this::handleListGames);
-        javalin.post("/game", ctx -> handleJsonRequest(ctx, CreateGameRequest.class, req ->
-                gameService.createGame(ctx.header("authorization"), req)));
-        javalin.put("/game", ctx -> handleJsonRequest(ctx, JoinGameRequest.class, req -> {
-            gameService.joinGame(ctx.header("authorization"), req);
-            return Map.of();
-        }));
+        registerRoutes();
     }
 
     public int run(int desiredPort) {
@@ -68,6 +55,23 @@ public class Server {
     }
 
     // ------------------------ Handlers ------------------------
+
+    private void registerRoutes() {
+        javalin.delete("/db", this::handleClear);
+        javalin.post("/user", ctx -> handleJsonRequest(ctx, RegisterRequest.class, userService::register));
+        javalin.post("/session", ctx -> handleJsonRequest(ctx, LoginRequest.class, userService::login));
+        javalin.delete("/session", this::handleLogout);
+        javalin.get("/game", this::handleListGames);
+        javalin.post("/game", ctx -> handleJsonRequest(
+                ctx,
+                CreateGameRequest.class,
+                req -> gameService.createGame(ctx.header("authorization"), req)
+        ));
+        javalin.put("/game", ctx -> handleJsonRequest(ctx, JoinGameRequest.class, req -> {
+            gameService.joinGame(ctx.header("authorization"), req);
+            return Map.of();
+        }));
+    }
 
     private void handleClear(Context ctx) {
         try {

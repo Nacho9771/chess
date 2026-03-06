@@ -17,8 +17,14 @@ public class MemoryGameDAO implements GameDAO {
             throw new DataAccessException("Invalid game");
         }
         int gameId = nextGameId++;
-        GameData storedGame = new GameData(gameId, gameData.whiteUsername(), gameData.blackUsername(),
-                gameData.gameName(), gameData.game() == null ? new ChessGame() : gameData.game());
+        ChessGame game = gameData.game() == null ? new ChessGame() : gameData.game();
+        GameData storedGame = new GameData(
+                gameId,
+                gameData.whiteUsername(),
+                gameData.blackUsername(),
+                gameData.gameName(),
+                game
+        );
         games.put(gameId, storedGame);
         return gameId;
     }
@@ -46,5 +52,4 @@ public class MemoryGameDAO implements GameDAO {
         games.clear();
         nextGameId = 1;
     }
-
 }
