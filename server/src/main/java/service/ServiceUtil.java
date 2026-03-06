@@ -5,11 +5,12 @@ import dataaccess.DataAccessException;
 import model.AuthData;
 
 public final class ServiceUtil {
-    private ServiceUtil() {
-    }
+
+    private ServiceUtil() {}
 
     // Shared auth and validation helpers for service classes.
     public static AuthData requireAuth(String token, AuthDAO authDAO) throws ServiceException, DataAccessException {
+
         if (isBlank(token)) {
             throw unauthorized();
         }

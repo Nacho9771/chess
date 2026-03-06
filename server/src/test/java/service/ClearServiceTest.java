@@ -12,9 +12,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 public class ClearServiceTest {
     @Test
     void clearPositive() throws Exception {
+
         var userDAO = new MemoryUserDAO();
         var authDAO = new MemoryAuthDAO();
         var gameDAO = new MemoryGameDAO();
+
         var userService = new UserService(userDAO, authDAO);
         var gameService = new GameService(authDAO, gameDAO);
         var clearService = new ClearService(userDAO, authDAO, gameDAO);

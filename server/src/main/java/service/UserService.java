@@ -14,12 +14,15 @@ public class UserService {
     private final AuthDAO authDAO;
 
     public UserService(UserDAO userDAO, AuthDAO authDAO) {
+
         this.userDAO = userDAO;
         this.authDAO = authDAO;
     }
 
     public AuthResult register(RegisterRequest req) throws ServiceException, DataAccessException {
+
         validateRegister(req);
+
         if (userDAO.getUser(req.username()) != null) {
             throw ServiceUtil.alreadyTaken();
         }
@@ -29,6 +32,7 @@ public class UserService {
     }
 
     public AuthResult login(LoginRequest req) throws ServiceException, DataAccessException {
+
         validateLogin(req);
         UserData user = userDAO.getUser(req.username());
 
@@ -40,12 +44,14 @@ public class UserService {
     }
 
     public void logout(String authToken) throws ServiceException, DataAccessException {
+
         // Remove the auth token to invalidate the session.
         AuthData auth = ServiceUtil.requireAuth(authToken, authDAO);
         authDAO.deleteAuth(auth.authToken());
     }
 
     private void validateRegister(RegisterRequest r) throws ServiceException {
+
         if (r == null || ServiceUtil.isBlank(r.username())
                 || ServiceUtil.isBlank(r.password()) || ServiceUtil.isBlank(r.email())) {
             throw ServiceUtil.badRequest();
@@ -53,15 +59,18 @@ public class UserService {
     }
 
     private void validateLogin(LoginRequest r) throws ServiceException {
+
         if (r == null || ServiceUtil.isBlank(r.username()) || ServiceUtil.isBlank(r.password())) {
             throw ServiceUtil.badRequest();
         }
     }
 
     private AuthResult createAuthForUser(String username) throws DataAccessException {
+
         // Create a fresh auth token on each login or registration.
         String token = TokenUtil.generateToken();
         authDAO.createAuth(new AuthData(token, username));
+
         return new AuthResult(username, token);
     }
 }

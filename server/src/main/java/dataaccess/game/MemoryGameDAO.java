@@ -1,10 +1,11 @@
 package dataaccess;
 
-import chess.ChessGame;
-import model.GameData;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+
+import chess.ChessGame;
+import model.GameData;
 
 public class MemoryGameDAO implements GameDAO {
 
@@ -14,11 +15,14 @@ public class MemoryGameDAO implements GameDAO {
 
     @Override
     public int createGame(GameData gameData) throws DataAccessException {
+
         if (gameData == null || gameData.gameName() == null) {
             throw new DataAccessException("Invalid game");
         }
+
         int gameId = nextGameId++;
         ChessGame game = gameData.game() == null ? new ChessGame() : gameData.game();
+
         GameData storedGame = new GameData(
                 gameId,
                 gameData.whiteUsername(),
@@ -26,6 +30,7 @@ public class MemoryGameDAO implements GameDAO {
                 gameData.gameName(),
                 game
         );
+
         games.put(gameId, storedGame);
         return gameId;
     }
@@ -37,9 +42,11 @@ public class MemoryGameDAO implements GameDAO {
 
     @Override
     public void updateGame(GameData newGameData) throws DataAccessException {
+
         if (newGameData == null || !games.containsKey(newGameData.gameID())) {
             throw new DataAccessException("Game does not exist");
         }
+
         games.put(newGameData.gameID(), newGameData);
     }
 
