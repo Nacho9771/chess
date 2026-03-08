@@ -1,4 +1,3 @@
 package service.join;
 
-public record JoinGameRequest(String playerColor, Integer gameID) {
-}
+public record JoinGameRequest(String playerColor, Integer gameID) {}

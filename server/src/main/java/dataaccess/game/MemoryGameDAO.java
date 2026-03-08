@@ -1,24 +1,36 @@
 package dataaccess;
 
-import chess.ChessGame;
-import model.GameData;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import chess.ChessGame;
+import model.GameData;
+
 public class MemoryGameDAO implements GameDAO {
 
+    // In-memory game store with a simple incrementing ID.
     private final Map<Integer, GameData> games = new HashMap<>();
     private int nextGameId = 1;
 
     @Override
     public int createGame(GameData gameData) throws DataAccessException {
+
         if (gameData == null || gameData.gameName() == null) {
             throw new DataAccessException("Invalid game");
         }
+
         int gameId = nextGameId++;
-        GameData storedGame = new GameData(gameId, gameData.whiteUsername(), gameData.blackUsername(),
-                gameData.gameName(), gameData.game() == null ? new ChessGame() : gameData.game());
+        ChessGame game = gameData.game() == null ? new ChessGame() : gameData.game();
+
+        GameData storedGame = new GameData(
+                gameId,
+                gameData.whiteUsername(),
+                gameData.blackUsername(),
+                gameData.gameName(),
+                game
+        );
+
         games.put(gameId, storedGame);
         return gameId;
     }
@@ -30,9 +42,11 @@ public class MemoryGameDAO implements GameDAO {
 
     @Override
     public void updateGame(GameData newGameData) throws DataAccessException {
+
         if (newGameData == null || !games.containsKey(newGameData.gameID())) {
             throw new DataAccessException("Game does not exist");
         }
+
         games.put(newGameData.gameID(), newGameData);
     }
 
@@ -46,5 +60,4 @@ public class MemoryGameDAO implements GameDAO {
         games.clear();
         nextGameId = 1;
     }
-
 }

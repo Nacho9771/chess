@@ -21,6 +21,7 @@ public class UserServiceTest {
 
     @BeforeEach
     void setup() {
+
         userDAO = new MemoryUserDAO();
         authDAO = new MemoryAuthDAO();
         userService = new UserService(userDAO, authDAO);
@@ -28,7 +29,9 @@ public class UserServiceTest {
 
     @Test
     void registerPositive() throws Exception {
+
         AuthResult result = userService.register(new RegisterRequest("gamer", "password", "gamingw@gmail.com"));
+
         assertEquals("gamer", result.username());
         assertNotNull(result.authToken());
         assertNotNull(userDAO.getUser("gamer"));
@@ -36,38 +39,48 @@ public class UserServiceTest {
 
     @Test
     void registerNegative() throws Exception {
+
         userService.register(new RegisterRequest("gamer", "password", "gamingw@gmail.com"));
         ServiceException ex = assertThrows(ServiceException.class,
                 () -> userService.register(new RegisterRequest("gamer", "password", "gamingw@gmail.com")));
+
         assertEquals(403, ex.statusCode());
     }
 
     @Test
     void loginPositive() throws Exception {
+
         userService.register(new RegisterRequest("gamer", "password", "gamingw@gmail.com"));
         AuthResult result = userService.login(new LoginRequest("gamer", "password"));
+
         assertEquals("gamer", result.username());
         assertNotNull(result.authToken());
     }
 
     @Test
     void loginNegative() throws Exception {
+
         userService.register(new RegisterRequest("gamer", "password", "gamingw@gmail.com"));
         ServiceException ex = assertThrows(ServiceException.class,
                 () -> userService.login(new LoginRequest("gamer", "wrong")));
+
         assertEquals(401, ex.statusCode());
     }
 
     @Test
     void logoutPositive() throws Exception {
+
         AuthResult result = userService.register(new RegisterRequest("gamer", "password", "gamingw@gmail.com"));
         userService.logout(result.authToken());
+
         assertNull(authDAO.getAuth(result.authToken()));
     }
 
     @Test
     void logoutNegative() {
+
         ServiceException ex = assertThrows(ServiceException.class, () -> userService.logout("bad-token"));
+
         assertEquals(401, ex.statusCode());
     }
 }

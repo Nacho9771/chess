@@ -1,5 +1,7 @@
 package service;
 
+import java.util.ArrayList;
+
 import chess.ChessGame;
 import dataaccess.AuthDAO;
 import dataaccess.DataAccessException;
@@ -11,7 +13,6 @@ import service.create.CreateGameResult;
 import service.join.JoinGameRequest;
 import service.list.GameListEntry;
 import service.list.ListGamesResult;
-import java.util.ArrayList;
 
 public class GameService {
 
@@ -24,8 +25,10 @@ public class GameService {
     }
 
     public ListGamesResult listGames(String token) throws ServiceException, DataAccessException {
-        requireAuth(token);
+
+        ServiceUtil.requireAuth(token, authDAO);
         var entries = new ArrayList<GameListEntry>();
+
         for (GameData game : gameDAO.listGames()) {
             entries.add(new GameListEntry(game.gameID(), game.whiteUsername(), game.blackUsername(), game.gameName()));
         }
@@ -33,34 +36,40 @@ public class GameService {
         return new ListGamesResult(entries);
     }
 
-    public CreateGameResult createGame(
-            String token,
-            CreateGameRequest req
+    public CreateGameResult createGame(String token, CreateGameRequest req
     ) throws ServiceException, DataAccessException {
-        requireAuth(token);
+
+        ServiceUtil.requireAuth(token, authDAO);
         validateCreate(req);
+
         int id = gameDAO.createGame(
                 new GameData(0, null, null, req.gameName(), new ChessGame())
         );
+
         return new CreateGameResult(id);
     }
 
     public void joinGame(String token, JoinGameRequest req) throws ServiceException, DataAccessException {
-        AuthData auth = requireAuth(token);
+
+        AuthData auth = ServiceUtil.requireAuth(token, authDAO);
         validateJoin(req);
+
         GameData game = requireGame(req.gameID());
         String white = game.whiteUsername();
         String black = game.blackUsername();
 
+        // Enforce a single player per color.
         if ("WHITE".equals(req.playerColor())) {
             if (white != null) {
-                throw error(403, "Error: already taken");
+                throw ServiceUtil.alreadyTaken();
             }
+
             white = auth.username();
         } else {
             if (black != null) {
-                throw error(403, "Error: already taken");
+                throw ServiceUtil.alreadyTaken();
             }
+
             black = auth.username();
         }
 
@@ -68,47 +77,31 @@ public class GameService {
     }
 
     private void validateCreate(CreateGameRequest r) throws ServiceException {
-        if (r == null || isBlank(r.gameName())) {
-            throw error(400, "Error: bad request");
+
+        if (r == null || ServiceUtil.isBlank(r.gameName())) {
+            throw ServiceUtil.badRequest();
         }
     }
 
     private void validateJoin(JoinGameRequest r) throws ServiceException {
+
         if (r == null || r.gameID() == null || !isValidColor(r.playerColor())) {
-            throw error(400, "Error: bad request");
+            throw ServiceUtil.badRequest();
         }
     }
 
     private GameData requireGame(Integer id) throws ServiceException, DataAccessException {
+
         GameData game = gameDAO.getGame(id);
+
         if (game == null) {
-            throw error(400, "Error: bad request");
+            throw ServiceUtil.badRequest();
         }
+
         return game;
-    }
-
-    private AuthData requireAuth(String token) throws ServiceException, DataAccessException {
-        if (isBlank(token)) {
-            throw error(401, "Error: unauthorized");
-        }
-
-        AuthData auth = authDAO.getAuth(token);
-        if (auth == null) {
-            throw error(401, "Error: unauthorized");
-        }
-
-        return auth;
     }
 
     private boolean isValidColor(String color) {
         return "WHITE".equals(color) || "BLACK".equals(color);
-    }
-
-    private boolean isBlank(String s) {
-        return s == null || s.isBlank();
-    }
-
-    private ServiceException error(int code, String msg) {
-        return new ServiceException(code, msg);
     }
 }
