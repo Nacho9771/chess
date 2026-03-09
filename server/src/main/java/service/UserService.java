@@ -5,6 +5,7 @@ import dataaccess.DataAccessException;
 import dataaccess.UserDAO;
 import model.AuthData;
 import model.UserData;
+import org.mindrot.jbcrypt.BCrypt;
 import service.user.LoginRequest;
 import service.user.RegisterRequest;
 
@@ -36,7 +37,7 @@ public class UserService {
         validateLogin(req);
         UserData user = userDAO.getUser(req.username());
 
-        if (user == null || !user.password().equals(req.password())) {
+        if (user == null || !passwordMatches(req.password(), user.password())) {
             throw ServiceUtil.unauthorized();
         }
 
@@ -72,5 +73,22 @@ public class UserService {
         authDAO.createAuth(new AuthData(token, username));
 
         return new AuthResult(username, token);
+    }
+
+    private boolean passwordMatches(String providedPassword, String storedPassword) {
+        if (storedPassword == null || providedPassword == null) {
+            return false;
+        }
+
+        if (storedPassword.startsWith("$2")) {
+            try {
+                return BCrypt.checkpw(providedPassword, storedPassword);
+            } catch (IllegalArgumentException ignored) {
+                return false;
+            }
+        }
+
+        // Keeps in-memory tests working while SQL stores hashes.
+        return storedPassword.equals(providedPassword);
     }
 }
