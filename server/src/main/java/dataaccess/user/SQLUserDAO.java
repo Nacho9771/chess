@@ -1,24 +1,116 @@
 package dataaccess;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
 import model.UserData;
+import org.mindrot.jbcrypt.BCrypt;
 
 public class SQLUserDAO implements UserDAO {
 
     public SQLUserDAO() throws DataAccessException {
         DatabaseManager.createDatabase();
-        configureDatabase();
+        createUserTable();
     }
 
+    // Public Methods
+
     public void createUser(UserData userData) throws DataAccessException {
+
+        validateUserData(userData);
+
+        String hashedPassword =
+                BCrypt.hashpw(userData.password(), BCrypt.gensalt());
+
+        String sql = """
+                INSERT INTO user (username, password, email)
+                VALUES (?, ?, ?)
+                """;
+
+        executeUpdate(sql,
+                userData.username(),
+                hashedPassword,
+                userData.email());
     }
 
     public UserData getUser(String username) throws DataAccessException {
+
+        if (isBlank(username)) {
+            return null;
+        }
+
+        String sql = """
+                SELECT username, password, email
+                FROM user
+                WHERE username = ?
+                """;
+
+        try (var connection = DatabaseManager.getConnection();
+             var statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, username);
+
+            try (ResultSet results = statement.executeQuery()) {
+
+                if (results.next()) {
+
+                    return new UserData(
+                            results.getString("username"),
+                            results.getString("password"),
+                            results.getString("email")
+                    );
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new DataAccessException("Unable to read user", e);
+        }
+
         return null;
     }
 
     public void clear() throws DataAccessException {
+        executeUpdate("DELETE FROM user");
     }
 
-    private void configureDatabase() throws DataAccessException {
+
+    private void createUserTable() throws DataAccessException {
+
+        String sql = """
+                CREATE TABLE IF NOT EXISTS user (
+                    username VARCHAR(255) NOT NULL,
+                    password VARCHAR(255) NOT NULL,
+                    email VARCHAR(255) NOT NULL,
+                    PRIMARY KEY (username)
+                )
+                """;
+
+        executeUpdate(sql);
+    }
+
+    // Helper Methods
+
+    private void executeUpdate(String sql, Object... parameters) throws DataAccessException {
+
+    }
+
+    private void setParameter(PreparedStatement statement, int index, Object value) throws SQLException {
+
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    private void validateUserData(UserData userData) throws DataAccessException {
+
+        if (userData == null ||
+                isBlank(userData.username()) ||
+                isBlank(userData.password()) ||
+                isBlank(userData.email())) {
+
+            throw new DataAccessException("Invalid user data");
+        }
     }
 }
