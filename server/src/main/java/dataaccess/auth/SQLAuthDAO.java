@@ -3,6 +3,7 @@ package dataaccess;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 
 import model.AuthData;
 
@@ -20,9 +21,9 @@ public class SQLAuthDAO implements AuthDAO {
         validateAuthData(authData);
 
         String sql = """
-                INSERT INTO auth (authToken, username)
-                VALUES (?, ?)
-                """;
+               INSERT INTO auth (authToken, username)
+               VALUES (?, ?)
+               """;
 
         executeUpdate(sql, authData.authToken(), authData.username());
     }
@@ -34,10 +35,10 @@ public class SQLAuthDAO implements AuthDAO {
         }
 
         String sql = """
-                SELECT authToken, username
-                FROM auth
-                WHERE authToken = ?
-                """;
+               SELECT authToken, username
+               FROM auth
+               WHERE authToken = ?
+               """;
 
         try (var connection = DatabaseManager.getConnection();
              var statement = connection.prepareStatement(sql)) {
@@ -81,12 +82,12 @@ public class SQLAuthDAO implements AuthDAO {
     private void createAuthTable() throws DataAccessException {
 
         String sql = """
-                CREATE TABLE IF NOT EXISTS auth (
-                    authToken VARCHAR(255) NOT NULL,
-                    username VARCHAR(255) NOT NULL,
-                    PRIMARY KEY (authToken)
-                )
-                """;
+               CREATE TABLE IF NOT EXISTS auth (
+                   authToken VARCHAR(255) NOT NULL,
+                   username VARCHAR(255) NOT NULL,
+                   PRIMARY KEY (authToken)
+               )
+               """;
 
         executeUpdate(sql);
     }
@@ -98,10 +99,28 @@ public class SQLAuthDAO implements AuthDAO {
      */
     private void executeUpdate(String sql, Object... parameters) throws DataAccessException {
 
+        try (var connection = DatabaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            for (int i = 0; i < parameters.length; i++) {
+                setParameter(statement, i + 1, parameters[i]);
+            }
+
+            statement.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new DataAccessException("Database update failed", e);
+        }
     }
 
-    private void setParameter(PreparedStatement statement, int index, Object value) throws SQLException {
+    private void setParameter(PreparedStatement statement, int index, Object value)
+            throws SQLException {
 
+        if (value == null) {
+            statement.setNull(index, Types.NULL);
+        } else {
+            statement.setObject(index, value);
+        }
     }
 
     private boolean isBlank(String value) {

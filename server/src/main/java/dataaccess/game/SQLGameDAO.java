@@ -4,6 +4,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
+import java.util.ArrayList;
 import java.util.Collection;
 
 import chess.ChessGame;
@@ -29,9 +31,9 @@ public class SQLGameDAO implements GameDAO {
         String gameJson = gson.toJson(game);
 
         String sql = """
-                INSERT INTO game (gameName, whiteUsername, blackUsername, game)
-                VALUES (?, ?, ?, ?)
-                """;
+               INSERT INTO game (gameName, whiteUsername, blackUsername, game)
+               VALUES (?, ?, ?, ?)
+               """;
 
         try (var connection = DatabaseManager.getConnection();
              var statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -63,10 +65,10 @@ public class SQLGameDAO implements GameDAO {
         }
 
         String sql = """
-                SELECT gameID, gameName, whiteUsername, blackUsername, game
-                FROM game
-                WHERE gameID = ?
-                """;
+               SELECT gameID, gameName, whiteUsername, blackUsername, game
+               FROM game
+               WHERE gameID = ?
+               """;
 
         try (var connection = DatabaseManager.getConnection();
              var statement = connection.prepareStatement(sql)) {
@@ -89,9 +91,58 @@ public class SQLGameDAO implements GameDAO {
 
     public void updateGame(GameData newGameData) throws DataAccessException {
 
+        validateGameData(newGameData);
+
+        ChessGame game = newGameData.game() == null ? new ChessGame() : newGameData.game();
+        String gameJson = gson.toJson(game);
+
+        String sql = """
+               UPDATE game
+               SET gameName = ?, whiteUsername = ?, blackUsername = ?, game = ?
+               WHERE gameID = ?
+               """;
+
+        try (var connection = DatabaseManager.getConnection();
+             var statement = connection.prepareStatement(sql)) {
+
+            setParameter(statement, 1, newGameData.gameName());
+            setParameter(statement, 2, newGameData.whiteUsername());
+            setParameter(statement, 3, newGameData.blackUsername());
+
+            setParameter(statement, 4, gameJson);
+            setParameter(statement, 5, newGameData.gameID());
+
+            int rowsUpdated = statement.executeUpdate();
+
+            if (rowsUpdated == 0) {
+                throw new DataAccessException("Game does not exist");
+            }
+
+        } catch (SQLException e) {
+            throw new DataAccessException("Unable to update game", e);
+        }
     }
 
     public Collection<GameData> listGames() throws DataAccessException {
+
+        ArrayList<GameData> games = new ArrayList<>();
+
+        String sql = """
+               SELECT gameID, gameName, whiteUsername, blackUsername, game
+               FROM game
+               """;
+
+        try (var connection = DatabaseManager.getConnection();
+             var statement = connection.prepareStatement(sql);
+             var results = statement.executeQuery()) {
+
+            while (results.next()) {
+                games.add(readGameRow(results));
+            }
+
+        } catch (SQLException e) {
+            throw new DataAccessException("Unable to list games", e);
+        }
 
         return games;
     }
@@ -103,15 +154,15 @@ public class SQLGameDAO implements GameDAO {
     private void createGameTable() throws DataAccessException {
 
         String sql = """
-                CREATE TABLE IF NOT EXISTS game (
-                    gameID INT NOT NULL AUTO_INCREMENT,
-                    gameName VARCHAR(255) NOT NULL,
-                    whiteUsername VARCHAR(255),
-                    blackUsername VARCHAR(255),
-                    game TEXT NOT NULL,
-                    PRIMARY KEY (gameID)
-                )
-                """;
+               CREATE TABLE IF NOT EXISTS game (
+                   gameID INT NOT NULL AUTO_INCREMENT,
+                   gameName VARCHAR(255) NOT NULL,
+                   whiteUsername VARCHAR(255),
+                   blackUsername VARCHAR(255),
+                   game TEXT NOT NULL,
+                   PRIMARY KEY (gameID)
+               )
+               """;
 
         executeUpdate(sql);
     }
@@ -123,24 +174,48 @@ public class SQLGameDAO implements GameDAO {
      */
     private GameData readGameRow(ResultSet results) throws SQLException {
 
-        return new GameData();
-    }
+        int id = results.getInt("gameID");
+        String name = results.getString("gameName");
+        String whitePlayer = results.getString("whiteUsername");
+        String blackPlayer = results.getString("blackUsername");
 
+        String gameJson = results.getString("game");
+
+        ChessGame game =
+                (gameJson == null || gameJson.isBlank())
+                        ? new ChessGame()
+                        : gson.fromJson(gameJson, ChessGame.class);
+
+        return new GameData(id, whitePlayer, blackPlayer, name, game);
+    }
 
     private void executeUpdate(String sql, Object... parameters) throws DataAccessException {
 
-    }
+        try (var connection = DatabaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
+            for (int i = 0; i < parameters.length; i++) {
+                setParameter(statement, i + 1, parameters[i]);
+            }
+            statement.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new DataAccessException("Database update failed", e);
+        }
+    }
 
     private void setParameter(PreparedStatement statement, int index, Object value) throws SQLException {
 
+        if (value == null) {
+            statement.setNull(index, Types.NULL);
+        } else {
+            statement.setObject(index, value);
+        }
     }
-
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
     }
-
 
     private void validateGameData(GameData gameData) throws DataAccessException {
 
