@@ -91,7 +91,6 @@ public class SQLAuthDAO implements AuthDAO {
         executeUpdate(sql);
     }
 
-
     // Helper Methods
 
     /**

@@ -100,7 +100,6 @@ public class SQLGameDAO implements GameDAO {
         executeUpdate("DELETE FROM game");
     }
 
-
     private void createGameTable() throws DataAccessException {
 
         String sql = """

@@ -66,7 +66,6 @@ public class SQLUserDAO implements UserDAO {
         } catch (SQLException e) {
             throw new DataAccessException("Unable to read user", e);
         }
-
         return null;
     }
 
