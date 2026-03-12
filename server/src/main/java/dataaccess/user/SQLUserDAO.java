@@ -1,14 +1,12 @@
 package dataaccess;
 
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Types;
 
 import model.UserData;
 import org.mindrot.jbcrypt.BCrypt;
 
-public class SQLUserDAO implements UserDAO {
+public class SQLUserDAO extends BaseSQLDAO implements UserDAO {
 
     public SQLUserDAO() throws DataAccessException {
         DatabaseManager.createDatabase();
@@ -90,36 +88,6 @@ public class SQLUserDAO implements UserDAO {
     }
 
     // Helper Methods
-
-    private void executeUpdate(String sql, Object... parameters) throws DataAccessException {
-
-        try (var connection = DatabaseManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-
-            for (int i = 0; i < parameters.length; i++) {
-                setParameter(statement, i + 1, parameters[i]);
-            }
-
-            statement.executeUpdate();
-
-        } catch (SQLException e) {
-            throw new DataAccessException("Database update failed", e);
-        }
-    }
-
-    private void setParameter(PreparedStatement statement, int index, Object value)
-            throws SQLException {
-
-        if (value == null) {
-            statement.setNull(index, Types.NULL);
-        } else {
-            statement.setObject(index, value);
-        }
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.isBlank();
-    }
 
     private void validateUserData(UserData userData) throws DataAccessException {
 

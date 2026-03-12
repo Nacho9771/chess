@@ -175,6 +175,10 @@ public class ChessGame {
         );
 
         teamTurn = (teamTurn == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
+
+        if (isInCheckmate(teamTurn) || isInStalemate(teamTurn)) {
+            finishGame();
+        }
     }
 
     public boolean isEnPassant(ChessMove move) {
