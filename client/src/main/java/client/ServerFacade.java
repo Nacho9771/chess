@@ -1,6 +1,7 @@
 package client;
 
 import com.google.gson.Gson;
+import model.AuthData;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,6 +10,8 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
 
 public class ServerFacade {
 
@@ -21,6 +24,50 @@ public class ServerFacade {
 
     public ServerFacade(String serverUrl) {
         this.serverUrl = normalizeServerUrl(serverUrl);
+    }
+
+    public void clear() throws ServerFacadeException {
+        makeRequest("DELETE", "/db", null, null, null);
+    }
+
+    public AuthData register(String username, String password, String email) throws ServerFacadeException {
+        Map<String, String> request = Map.of(
+                "username", username,
+                "password", password,
+                "email", email
+        );
+        return makeRequest("POST", "/user", null, request, AuthData.class);
+    }
+
+    public AuthData login(String username, String password) throws ServerFacadeException {
+        Map<String, String> request = Map.of(
+                "username", username,
+                "password", password
+        );
+        return makeRequest("POST", "/session", null, request, AuthData.class);
+    }
+
+    public void logout(String authToken) throws ServerFacadeException {
+        makeRequest("DELETE", "/session", authToken, null, null);
+    }
+
+    public int createGame(String authToken, String gameName) throws ServerFacadeException {
+        Map<String, String> request = Map.of("gameName", gameName);
+        CreateGameResponse response = makeRequest("POST", "/game", authToken, request, CreateGameResponse.class);
+        return response.gameID();
+    }
+
+    public List<GameSummary> listGames(String authToken) throws ServerFacadeException {
+        ListGamesResponse response = makeRequest("GET", "/game", authToken, null, ListGamesResponse.class);
+        return response.games();
+    }
+
+    public void joinGame(String authToken, String playerColor, int gameId) throws ServerFacadeException {
+        Map<String, Object> request = Map.of(
+                "playerColor", playerColor,
+                "gameID", gameId
+        );
+        makeRequest("PUT", "/game", authToken, request, null);
     }
 
     private <T> T makeRequest(String method, String path, String authToken, Object requestBody, Class<T> responseClass)
@@ -103,4 +150,8 @@ public class ServerFacade {
     }
 
     private record ErrorResponse(String message) { }
+
+    private record CreateGameResponse(int gameID) { }
+
+    private record ListGamesResponse(List<GameSummary> games) { }
 }
