@@ -1,7 +1,10 @@
 package client;
 
 import model.AuthData;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import server.Server;
 
@@ -12,6 +15,7 @@ public class ServerFacadeTests {
     private static Server server;
     private static ServerFacade facade;
 
+    @BeforeAll
     public static void init() {
         server = new Server();
         int port = server.run(0);
@@ -19,10 +23,12 @@ public class ServerFacadeTests {
         System.out.println("Started test HTTP server on " + port);
     }
 
+    @BeforeEach
     void clearDatabase() throws Exception {
         facade.clear();
     }
 
+    @AfterAll
     static void stopServer() {
         server.stop();
     }
@@ -122,4 +128,54 @@ public class ServerFacadeTests {
                 () -> facade.createGame("bad-token", "new-game"));
         Assertions.assertEquals("Error: unauthorized", ex.getMessage());
     }
+
+    @Test
+    void listGamesPositive() throws Exception {
+        AuthData auth = facade.register("player1", "password", "p1@email.com");
+        facade.createGame(auth.authToken(), "first-game");
+        facade.createGame(auth.authToken(), "second-game");
+
+        List<GameSummary> games = facade.listGames(auth.authToken());
+
+        Assertions.assertEquals(2, games.size());
+        Assertions.assertTrue(games.stream().anyMatch(game -> "first-game".equals(game.gameName())));
+        Assertions.assertTrue(games.stream().anyMatch(game -> "second-game".equals(game.gameName())));
+    }
+
+    @Test
+    void listGamesNegativeUnauthorized() {
+        ServerFacadeException ex = Assertions.assertThrows(ServerFacadeException.class,
+                () -> facade.listGames("bad-token"));
+        Assertions.assertEquals("Error: unauthorized", ex.getMessage());
+    }
+
+    @Test
+    void joinGamePositive() throws Exception {
+        AuthData creator = facade.register("creator", "password", "creator@email.com");
+        int gameId = facade.createGame(creator.authToken(), "joinable");
+        AuthData player = facade.register("player1", "password", "p1@email.com");
+
+        facade.joinGame(player.authToken(), "WHITE", gameId);
+
+        List<GameSummary> games = facade.listGames(player.authToken());
+        GameSummary joinedGame = games.stream()
+                .filter(game -> game.gameID() == gameId)
+                .findFirst()
+                .orElseThrow();
+        Assertions.assertEquals("player1", joinedGame.whiteUsername());
+    }
+
+    @Test
+    void joinGameNegativeColorTaken() throws Exception {
+        AuthData creator = facade.register("creator", "password", "creator@email.com");
+        int gameId = facade.createGame(creator.authToken(), "joinable");
+        AuthData whitePlayer = facade.register("whitePlayer", "password", "white@email.com");
+        facade.joinGame(whitePlayer.authToken(), "WHITE", gameId);
+        AuthData secondPlayer = facade.register("secondPlayer", "password", "second@email.com");
+
+        ServerFacadeException ex = Assertions.assertThrows(ServerFacadeException.class,
+                () -> facade.joinGame(secondPlayer.authToken(), "WHITE", gameId));
+        Assertions.assertEquals("Error: already taken", ex.getMessage());
+    }
 }
+
