@@ -40,11 +40,65 @@ public class ChessClient {
     }
 
     private boolean handlePreloginCommand(String input) {
+        String command = normalizeCommand(input);
 
+        return switch (command) {
+            case "help" -> {
+                printPreloginHelp();
+                yield true;
+            }
+            case "quit" -> false;
+            case "login" -> {
+                login();
+                yield true;
+            }
+            case "register" -> {
+                register();
+                yield true;
+            }
+            case "" -> true;
+            default -> {
+                System.out.println("Error: unknown command. Type 'help' to see options.");
+                yield true;
+            }
+        };
     }
 
     private boolean handlePostloginCommand(String input) {
+        String command = normalizeCommand(input);
 
+        return switch (command) {
+            case "help" -> {
+                printPostloginHelp();
+                yield true;
+            }
+            case "logout" -> {
+                logout();
+                yield true;
+            }
+            case "create", "create game" -> {
+                createGame();
+                yield true;
+            }
+            case "list", "list games" -> {
+                listGames();
+                yield true;
+            }
+            case "play", "play game" -> {
+                playGame();
+                yield true;
+            }
+            case "observe", "observe game" -> {
+                observeGame();
+                yield true;
+            }
+            case "quit" -> false;
+            case "" -> true;
+            default -> {
+                System.out.println("Error: unknown command. Type 'help' to see options.");
+                yield true;
+            }
+        };
     }
 
     private void register() {
@@ -101,11 +155,44 @@ public class ChessClient {
     }
 
     private void listGames() {
+        try {
+            lastListedGames = serverFacade.listGames(authToken);
+            if (lastListedGames.isEmpty()) {
+                System.out.println("No games found.");
+                return;
+            }
 
+            for (int index = 0; index < lastListedGames.size(); index++) {
+                GameSummary game = lastListedGames.get(index);
+                System.out.printf("%d. %s | White: %s | Black: %s%n",
+                        index + 1,
+                        game.gameName(),
+                        displayPlayer(game.whiteUsername()),
+                        displayPlayer(game.blackUsername()));
+            }
+        } catch (ServerFacadeException ex) {
+            System.out.println(ex.getMessage());
+        }
     }
 
     private void playGame() {
+        GameSummary selectedGame = promptForGameSelection();
+        if (selectedGame == null) {
+            return;
+        }
 
+        ChessGame.TeamColor color = promptForColor();
+        if (color == null) {
+            return;
+        }
+
+        try {
+            serverFacade.joinGame(authToken, color.name(), selectedGame.gameID());
+            System.out.printf("Joined '%s' as %s.%n", selectedGame.gameName(), color.name().toLowerCase(Locale.ROOT));
+            boardPrinter.drawBoard(color);
+        } catch (ServerFacadeException ex) {
+            System.out.println(ex.getMessage());
+        }
     }
 
     private void observeGame() {
@@ -119,11 +206,44 @@ public class ChessClient {
     }
 
     private GameSummary promptForGameSelection() {
+        if (lastListedGames.isEmpty()) {
+            System.out.println("List games first so you can choose one by number.");
+            return null;
+        }
 
+        String numberText = prompt("Game number");
+        Integer gameNumber = parsePositiveNumber(numberText);
+        if (gameNumber == null || gameNumber < 1 || gameNumber > lastListedGames.size()) {
+            System.out.println("Error: invalid game number");
+            return null;
+        }
+
+        return lastListedGames.get(gameNumber - 1);
+    }
+
+    private ChessGame.TeamColor promptForColor() {
+        String colorText = prompt("Color (white or black)");
+        if (colorText.equalsIgnoreCase("white")) {
+            return ChessGame.TeamColor.WHITE;
+        }
+        if (colorText.equalsIgnoreCase("black")) {
+            return ChessGame.TeamColor.BLACK;
+        }
+
+        System.out.println("Error: color must be white or black");
+        return null;
     }
 
     private Integer parsePositiveNumber(String value) {
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
 
+    private String displayPlayer(String player) {
+        return player == null || player.isBlank() ? "(open)" : player;
     }
 
     private void setSession(AuthData authData) {
@@ -148,6 +268,10 @@ public class ChessClient {
             return "";
         }
         return scanner.nextLine().trim();
+    }
+
+    private String normalizeCommand(String input) {
+        return input == null ? "" : input.trim().toLowerCase(Locale.ROOT);
     }
 
     private void printPreloginHelp() {
