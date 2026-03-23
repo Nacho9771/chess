@@ -64,16 +64,10 @@ public class GameService {
             if (white != null && !white.equals(username)) {
                 throw ServiceUtil.alreadyTaken();
             }
-            if (black != null && black.equals(username)) {
-                throw ServiceUtil.alreadyTaken();
-            }
 
             white = username;
         } else {
             if (black != null && !black.equals(username)) {
-                throw ServiceUtil.alreadyTaken();
-            }
-            if (white != null && white.equals(username)) {
                 throw ServiceUtil.alreadyTaken();
             }
 
