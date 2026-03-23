@@ -49,7 +49,7 @@ public class Server {
             throw new RuntimeException("Error: unable to initialize data access", ex);
         }
 
-        userService = new UserService(userDAO, authDAO);
+        userService = new UserService(userDAO, authDAO, gameDAO);
         gameService = new GameService(authDAO, gameDAO);
         clearService = new ClearService(userDAO, authDAO, gameDAO);
 

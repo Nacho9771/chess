@@ -29,7 +29,7 @@ public class GameServiceTest {
         AuthDAO authDAO = new MemoryAuthDAO();
         GameDAO gameDAO = new MemoryGameDAO();
 
-        userService = new UserService(userDAO, authDAO);
+        userService = new UserService(userDAO, authDAO, gameDAO);
         gameService = new GameService(authDAO, gameDAO);
         authToken = userService.register(new RegisterRequest("gamer", "password", "gamingw@gmail.com")).authToken();
     }

@@ -28,6 +28,7 @@ public class ChessClient {
     public void run() {
         boolean running = true;
         printWelcome();
+        Runtime.getRuntime().addShutdownHook(new Thread(this::shutdownCleanup));
 
         while (running && scanner.hasNextLine()) {
             try {
@@ -93,7 +94,10 @@ public class ChessClient {
                 observeGame();
                 yield true;
             }
-            case "quit" -> false;
+            case "quit" -> {
+                logout(false);
+                yield false;
+            }
             case "" -> true;
             default -> {
                 System.out.println("Error: unknown command. Type 'help' to see options.");
@@ -132,13 +136,22 @@ public class ChessClient {
     }
 
     private void logout() {
+        logout(true);
+    }
+
+    private void logout(boolean showHelp) {
         try {
+            if (authToken == null) {
+                return;
+            }
             serverFacade.logout(authToken);
             authToken = null;
             username = null;
             lastListedGames = new ArrayList<>();
             System.out.println("Logged out.");
-            printPreloginHelp();
+            if (showHelp) {
+                printPreloginHelp();
+            }
         } catch (ServerFacadeException ex) {
             System.out.println(ex.getMessage());
         }
@@ -290,6 +303,15 @@ public class ChessClient {
         System.out.println("observe game - view a listed game");
         System.out.println("logout - sign out");
         System.out.println("quit - exit the program");
+    }
+
+    private void shutdownCleanup() {
+        try {
+            if (authToken != null) {
+                serverFacade.logout(authToken);
+            }
+        } catch (ServerFacadeException ignored) {
+        }
     }
 }
 

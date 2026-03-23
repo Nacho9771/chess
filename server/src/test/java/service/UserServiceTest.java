@@ -1,7 +1,9 @@
 package service;
 
 import dataaccess.AuthDAO;
+import dataaccess.GameDAO;
 import dataaccess.MemoryAuthDAO;
+import dataaccess.MemoryGameDAO;
 import dataaccess.MemoryUserDAO;
 import dataaccess.UserDAO;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,13 +20,15 @@ public class UserServiceTest {
     private UserService userService;
     private UserDAO userDAO;
     private AuthDAO authDAO;
+    private GameDAO gameDAO;
 
     @BeforeEach
     void setup() {
 
         userDAO = new MemoryUserDAO();
         authDAO = new MemoryAuthDAO();
-        userService = new UserService(userDAO, authDAO);
+        gameDAO = new MemoryGameDAO();
+        userService = new UserService(userDAO, authDAO, gameDAO);
     }
 
     @Test

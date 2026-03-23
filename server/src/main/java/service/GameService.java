@@ -57,20 +57,27 @@ public class GameService {
         GameData game = requireGame(req.gameID());
         String white = game.whiteUsername();
         String black = game.blackUsername();
+        String username = auth.username();
 
         // Enforce a single player per color.
         if ("WHITE".equals(req.playerColor())) {
-            if (white != null) {
+            if (white != null && !white.equals(username)) {
+                throw ServiceUtil.alreadyTaken();
+            }
+            if (black != null && black.equals(username)) {
                 throw ServiceUtil.alreadyTaken();
             }
 
-            white = auth.username();
+            white = username;
         } else {
-            if (black != null) {
+            if (black != null && !black.equals(username)) {
+                throw ServiceUtil.alreadyTaken();
+            }
+            if (white != null && white.equals(username)) {
                 throw ServiceUtil.alreadyTaken();
             }
 
-            black = auth.username();
+            black = username;
         }
 
         gameDAO.updateGame(new GameData(game.gameID(), white, black, game.gameName(), game.game()));

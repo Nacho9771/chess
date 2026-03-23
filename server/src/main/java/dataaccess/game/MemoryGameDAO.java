@@ -3,6 +3,7 @@ package dataaccess;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import chess.ChessGame;
 import model.GameData;
@@ -53,6 +54,29 @@ public class MemoryGameDAO implements GameDAO {
     @Override
     public Collection<GameData> listGames() {
         return games.values();
+    }
+
+    @Override
+    public void clearPlayer(String username) {
+        if (username == null || username.isBlank()) {
+            return;
+        }
+
+        for (var entry : new java.util.ArrayList<>(games.entrySet())) {
+            GameData game = entry.getValue();
+            String white = username.equals(game.whiteUsername()) ? null : game.whiteUsername();
+            String black = username.equals(game.blackUsername()) ? null : game.blackUsername();
+
+            if (!Objects.equals(white, game.whiteUsername()) || !Objects.equals(black, game.blackUsername())) {
+                games.put(entry.getKey(), new GameData(
+                        game.gameID(),
+                        white,
+                        black,
+                        game.gameName(),
+                        game.game()
+                ));
+            }
+        }
     }
 
     @Override

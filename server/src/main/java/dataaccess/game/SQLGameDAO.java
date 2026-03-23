@@ -145,6 +145,39 @@ public class SQLGameDAO extends BaseSQLDAO implements GameDAO {
         return games;
     }
 
+    public void clearPlayer(String username) throws DataAccessException {
+
+        if (isBlank(username)) {
+            return;
+        }
+
+        String clearWhiteSql = """
+               UPDATE game
+               SET whiteUsername = NULL
+               WHERE whiteUsername = ?
+               """;
+
+        String clearBlackSql = """
+               UPDATE game
+               SET blackUsername = NULL
+               WHERE blackUsername = ?
+               """;
+
+        try (var connection = DatabaseManager.getConnection()) {
+            try (var statement = connection.prepareStatement(clearWhiteSql)) {
+                statement.setString(1, username);
+                statement.executeUpdate();
+            }
+
+            try (var statement = connection.prepareStatement(clearBlackSql)) {
+                statement.setString(1, username);
+                statement.executeUpdate();
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException("Unable to clear player from games", e);
+        }
+    }
+
     public void clear() throws DataAccessException {
         executeUpdate("DELETE FROM game");
     }

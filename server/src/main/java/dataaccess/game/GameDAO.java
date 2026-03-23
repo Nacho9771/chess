@@ -13,5 +13,7 @@ public interface GameDAO {
 
     Collection<GameData> listGames() throws DataAccessException;
 
+    void clearPlayer(String username) throws DataAccessException;
+
     void clear() throws DataAccessException;
 }

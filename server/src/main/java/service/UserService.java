@@ -2,6 +2,7 @@ package service;
 
 import dataaccess.AuthDAO;
 import dataaccess.DataAccessException;
+import dataaccess.GameDAO;
 import dataaccess.UserDAO;
 import model.AuthData;
 import model.UserData;
@@ -13,11 +14,13 @@ public class UserService {
 
     private final UserDAO userDAO;
     private final AuthDAO authDAO;
+    private final GameDAO gameDAO;
 
-    public UserService(UserDAO userDAO, AuthDAO authDAO) {
+    public UserService(UserDAO userDAO, AuthDAO authDAO, GameDAO gameDAO) {
 
         this.userDAO = userDAO;
         this.authDAO = authDAO;
+        this.gameDAO = gameDAO;
     }
 
     public AuthResult register(RegisterRequest req) throws ServiceException, DataAccessException {
@@ -48,6 +51,7 @@ public class UserService {
 
         // Remove the auth token to invalidate the session.
         AuthData auth = ServiceUtil.requireAuth(authToken, authDAO);
+        gameDAO.clearPlayer(auth.username());
         authDAO.deleteAuth(auth.authToken());
     }
 

@@ -17,7 +17,7 @@ public class ClearServiceTest {
         var authDAO = new MemoryAuthDAO();
         var gameDAO = new MemoryGameDAO();
 
-        var userService = new UserService(userDAO, authDAO);
+        var userService = new UserService(userDAO, authDAO, gameDAO);
         var gameService = new GameService(authDAO, gameDAO);
         var clearService = new ClearService(userDAO, authDAO, gameDAO);
 
