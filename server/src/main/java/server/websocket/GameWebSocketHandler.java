@@ -75,8 +75,15 @@ public final class GameWebSocketHandler {
         notifyOthers(gameId, ctx, auth.username() + connectedMessageSuffix(connection));
     }
 
+    private void handleLeave(WsContext ctx, String token, int gameId) throws ServiceException, DataAccessException {
+        AuthData auth = ServiceUtil.requireAuth(token, authDAO);
+        requireConnectedToGame(ctx, gameId);
 
-    private GameData requireGame(int gameId) throws ServiceException, DataAccessException {
+        hub.leave(ctx);
+        notifyAll(gameId, auth.username() + " left the game");
+    }
+
+        private GameData requireGame(int gameId) throws ServiceException, DataAccessException {
         GameData gameData = gameDAO.getGame(gameId);
         if (gameData == null) {
             throw ServiceUtil.badRequest();
@@ -126,6 +133,12 @@ public final class GameWebSocketHandler {
         }
     }
 
+    private void notifyAll(int gameId, String message) {
+        NotificationMessage notification = new NotificationMessage(message);
+        for (WsContext other : hub.contextsInGame(gameId)) {
+            send(other, notification);
+        }
+    }
 
     private void send(WsContext ctx, Object message) {
         ctx.send(gson.toJson(message));
