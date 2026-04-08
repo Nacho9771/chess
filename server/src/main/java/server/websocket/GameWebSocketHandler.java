@@ -89,7 +89,35 @@ public final class GameWebSocketHandler {
         notifyAll(gameId, auth.username() + " left the game");
     }
 
-        private GameData requireGame(int gameId) throws ServiceException, DataAccessException {
+    private void handleResign(WsContext ctx, String token, int gameId) throws ServiceException, DataAccessException {
+        AuthData auth = ServiceUtil.requireAuth(token, authDAO);
+        requireConnectedToGame(ctx, gameId);
+
+        GameData gameData = requireGame(gameId);
+        ChessGame.TeamColor playerColor = playerColor(gameData, auth.username());
+        if (playerColor == null) {
+            throw new ServiceException(403, "Error: observers cannot resign");
+        }
+
+        ChessGame game = gameData.game();
+        if (game.isFinished()) {
+            throw new ServiceException(403, "Error: game is over");
+        }
+
+        game.finishGame();
+        GameData updated = new GameData(
+                gameData.gameID(),
+                gameData.whiteUsername(),
+                gameData.blackUsername(),
+                gameData.gameName(),
+                game
+        );
+        gameDAO.updateGame(updated);
+
+        broadcast(gameId, new NotificationMessage(auth.username() + " resigned"));
+    }
+
+    private GameData requireGame(int gameId) throws ServiceException, DataAccessException {
         GameData gameData = gameDAO.getGame(gameId);
         if (gameData == null) {
             throw ServiceUtil.badRequest();
@@ -164,6 +192,12 @@ public final class GameWebSocketHandler {
         NotificationMessage notification = new NotificationMessage(message);
         for (WsContext other : hub.contextsInGame(gameId)) {
             send(other, notification);
+        }
+    }
+
+    private void broadcast(int gameId, Object message) {
+        for (WsContext other : hub.contextsInGame(gameId)) {
+            send(other, message);
         }
     }
 
