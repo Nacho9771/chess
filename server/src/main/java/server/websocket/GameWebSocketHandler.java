@@ -1,8 +1,20 @@
 package server.websocket;
 
+import chess.ChessGame;
 import com.google.gson.Gson;
 import dataaccess.AuthDAO;
+import dataaccess.DataAccessException;
 import dataaccess.GameDAO;
+import io.javalin.websocket.WsCloseContext;
+import io.javalin.websocket.WsContext;
+import io.javalin.websocket.WsMessageContext;
+import model.AuthData;
+import model.GameData;
+import service.ServiceException;
+import service.ServiceUtil;
+import websocket.messages.ErrorMessage;
+import websocket.messages.LoadGameMessage;
+import websocket.messages.NotificationMessage;
 
 // Implements websocket
 public final class GameWebSocketHandler {
@@ -58,7 +70,9 @@ public final class GameWebSocketHandler {
 
         WebSocketConnection connection = toConnection(auth.username(), gameData);
         hub.joinGame(gameId, ctx, connection);
+
         send(ctx, new LoadGameMessage(gameData));
+        notifyOthers(gameId, ctx, auth.username() + connectedMessageSuffix(connection));
     }
 
 
@@ -94,6 +108,24 @@ public final class GameWebSocketHandler {
         }
         return null;
     }
+
+    private String connectedMessageSuffix(WebSocketConnection connection) {
+        if (connection.role() == WebSocketConnection.Role.OBSERVER) {
+            return " connected as an observer";
+        }
+        return " connected as " + connection.color();
+    }
+
+    private void notifyOthers(int gameId, WsContext sender, String message) {
+        NotificationMessage notification = new NotificationMessage(message);
+        for (WsContext other : hub.contextsInGame(gameId)) {
+            if (other == sender) {
+                continue;
+            }
+            send(other, notification);
+        }
+    }
+
 
     private void send(WsContext ctx, Object message) {
         ctx.send(gson.toJson(message));
