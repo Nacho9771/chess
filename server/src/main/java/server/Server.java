@@ -13,6 +13,7 @@ import dataaccess.SQLUserDAO;
 import dataaccess.UserDAO;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
+import server.websocket.GameWebSocketHandler;
 import service.ClearService;
 import service.ErrorResult;
 import service.GameService;
@@ -31,6 +32,7 @@ public class Server {
     private final UserService userService;
     private final GameService gameService;
     private final ClearService clearService;
+    private final GameWebSocketHandler webSocketHandler;
 
     public Server() {
         javalin = Javalin.create(config -> {
@@ -52,6 +54,7 @@ public class Server {
         userService = new UserService(userDAO, authDAO, gameDAO);
         gameService = new GameService(authDAO, gameDAO);
         clearService = new ClearService(userDAO, authDAO, gameDAO);
+        webSocketHandler = new GameWebSocketHandler(gson, authDAO, gameDAO);
 
         registerRoutes();
     }
@@ -87,6 +90,11 @@ public class Server {
             gameService.joinGame(ctx.header("authorization"), req);
             return Map.of();
         }));
+
+        javalin.ws("/ws", ws -> {
+            ws.onMessage(webSocketHandler::onMessage);
+            ws.onClose(webSocketHandler::onClose);
+        });
     }
 
     private void handleClear(Context ctx) {
