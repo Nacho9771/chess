@@ -1,6 +1,8 @@
 package server.websocket;
 
 import chess.ChessGame;
+import chess.ChessMove;
+import chess.InvalidMoveException;
 import com.google.gson.Gson;
 import dataaccess.AuthDAO;
 import dataaccess.DataAccessException;
@@ -180,13 +182,6 @@ public final class GameWebSocketHandler {
         }
     }
 
-    private void requireConnectedToGame(WsContext ctx, int gameId) throws ServiceException {
-        WebSocketConnection existing = hub.get(ctx);
-        if (existing == null || existing.gameId() != gameId) {
-            throw new ServiceException(403, "Error: not connected");
-        }
-    }
-
     private WebSocketConnection toConnection(String username, GameData gameData) {
         ChessGame.TeamColor color = playerColor(gameData, username);
         if (color == null) {
@@ -281,5 +276,4 @@ public final class GameWebSocketHandler {
         }
         send(ctx, new ErrorMessage(errorMessage));
     }
-
 }
