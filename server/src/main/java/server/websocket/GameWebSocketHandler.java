@@ -244,8 +244,9 @@ public final class GameWebSocketHandler {
 
     private void notifyOthers(int gameId, WsContext sender, String message) {
         NotificationMessage notification = new NotificationMessage(message);
+        String senderSessionId = sender.sessionId();
         for (WsContext other : hub.contextsInGame(gameId)) {
-            if (other == sender) {
+            if (other.sessionId().equals(senderSessionId)) {
                 continue;
             }
             send(other, notification);
