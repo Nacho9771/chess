@@ -146,6 +146,17 @@ public final class GameWebSocketHandler {
         } catch (InvalidMoveException ex) {
             throw new ServiceException(403, "Error: invalid move");
         }
+
+        GameData updated = new GameData(
+                gameData.gameID(),
+                gameData.whiteUsername(),
+                gameData.blackUsername(),
+                gameData.gameName(),
+                game
+        );
+        gameDAO.updateGame(updated);
+
+        broadcast(gameId, new LoadGameMessage(updated));
     }
 
     private GameData requireGame(int gameId) throws ServiceException, DataAccessException {
