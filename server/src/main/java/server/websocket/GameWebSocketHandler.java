@@ -79,6 +79,12 @@ public final class GameWebSocketHandler {
         AuthData auth = ServiceUtil.requireAuth(token, authDAO);
         requireConnectedToGame(ctx, gameId);
 
+        GameData gameData = requireGame(gameId);
+        GameData updated = removePlayerIfPresent(gameData, auth.username());
+        if (updated != gameData) {
+            gameDAO.updateGame(updated);
+        }
+
         hub.leave(ctx);
         notifyAll(gameId, auth.username() + " left the game");
     }
@@ -114,6 +120,27 @@ public final class GameWebSocketHandler {
             return ChessGame.TeamColor.BLACK;
         }
         return null;
+    }
+
+    private GameData removePlayerIfPresent(GameData gameData, String username) {
+        String white = gameData.whiteUsername();
+        String black = gameData.blackUsername();
+
+        boolean changed = false;
+        if (username != null && username.equals(white)) {
+            white = null;
+            changed = true;
+        }
+        if (username != null && username.equals(black)) {
+            black = null;
+            changed = true;
+        }
+
+        if (!changed) {
+            return gameData;
+        }
+
+        return new GameData(gameData.gameID(), white, black, gameData.gameName(), gameData.game());
     }
 
     private String connectedMessageSuffix(WebSocketConnection connection) {
