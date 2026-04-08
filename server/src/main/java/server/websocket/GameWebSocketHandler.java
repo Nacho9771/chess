@@ -117,12 +117,50 @@ public final class GameWebSocketHandler {
         broadcast(gameId, new NotificationMessage(auth.username() + " resigned"));
     }
 
+    private void handleMove(WsContext ctx, String token, int gameId, ChessMove move)
+            throws ServiceException, DataAccessException {
+        if (move == null) {
+            throw ServiceUtil.badRequest();
+        }
+
+        AuthData auth = ServiceUtil.requireAuth(token, authDAO);
+        requireConnectedToGame(ctx, gameId);
+
+        GameData gameData = requireGame(gameId);
+        ChessGame.TeamColor playerColor = playerColor(gameData, auth.username());
+        if (playerColor == null) {
+            throw new ServiceException(403, "Error: observers cannot make moves");
+        }
+
+        ChessGame game = gameData.game();
+        if (game.isFinished()) {
+            throw new ServiceException(403, "Error: game is over");
+        }
+
+        if (game.getTeamTurn() != playerColor) {
+            throw new ServiceException(403, "Error: not your turn");
+        }
+
+        try {
+            game.makeMove(move);
+        } catch (InvalidMoveException ex) {
+            throw new ServiceException(403, "Error: invalid move");
+        }
+    }
+
     private GameData requireGame(int gameId) throws ServiceException, DataAccessException {
         GameData gameData = gameDAO.getGame(gameId);
         if (gameData == null) {
             throw ServiceUtil.badRequest();
         }
         return gameData;
+    }
+
+    private void requireConnectedToGame(WsContext ctx, int gameId) throws ServiceException {
+        WebSocketConnection existing = hub.get(ctx);
+        if (existing == null || existing.gameId() != gameId) {
+            throw new ServiceException(403, "Error: not connected");
+        }
     }
 
     private void requireConnectedToGame(WsContext ctx, int gameId) throws ServiceException {
