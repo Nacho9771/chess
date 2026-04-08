@@ -17,4 +17,94 @@ public final class GameWebSocketHandler {
         this.authDAO = authDAO;
         this.gameDAO = gameDAO;
     }
+
+    public void onMessage(WsMessageContext ctx) {
+        UserGameCommandDTO command;
+        try {
+            command = gson.fromJson(ctx.message(), UserGameCommandDTO.class);
+        } catch (Exception ex) {
+            sendError(ctx, "Error: bad request");
+            return;
+        }
+
+        if (command == null || command.commandType == null || command.gameID == null) {
+            sendError(ctx, "Error: bad request");
+            return;
+        }
+
+        try {
+            switch (command.commandType) {
+                case CONNECT -> handleConnect(ctx, command.authToken, command.gameID);
+                case MAKE_MOVE -> handleMove(ctx, command.authToken, command.gameID, command.move);
+                case LEAVE -> handleLeave(ctx, command.authToken, command.gameID);
+                case RESIGN -> handleResign(ctx, command.authToken, command.gameID);
+            }
+        } catch (DataAccessException ex) {
+            sendError(ctx, "Error: " + ex.getMessage());
+        } catch (ServiceException ex) {
+            sendError(ctx, ex.getMessage());
+        } catch (RuntimeException ex) {
+            sendError(ctx, "Error: " + ex.getMessage());
+        }
+    }
+
+    public void onClose(WsCloseContext ctx) {
+        hub.leave(ctx);
+    }
+
+    private void handleConnect(WsContext ctx, String token, int gameId) throws ServiceException, DataAccessException {
+        AuthData auth = ServiceUtil.requireAuth(token, authDAO);
+        GameData gameData = requireGame(gameId);
+
+        WebSocketConnection connection = toConnection(auth.username(), gameData);
+        hub.joinGame(gameId, ctx, connection);
+        send(ctx, new LoadGameMessage(gameData));
+    }
+
+
+    private GameData requireGame(int gameId) throws ServiceException, DataAccessException {
+        GameData gameData = gameDAO.getGame(gameId);
+        if (gameData == null) {
+            throw ServiceUtil.badRequest();
+        }
+        return gameData;
+    }
+
+    private void requireConnectedToGame(WsContext ctx, int gameId) throws ServiceException {
+        WebSocketConnection existing = hub.get(ctx);
+        if (existing == null || existing.gameId() != gameId) {
+            throw new ServiceException(403, "Error: not connected");
+        }
+    }
+
+    private WebSocketConnection toConnection(String username, GameData gameData) {
+        ChessGame.TeamColor color = playerColor(gameData, username);
+        if (color == null) {
+            return new WebSocketConnection(username, gameData.gameID(), WebSocketConnection.Role.OBSERVER, null);
+        }
+        return new WebSocketConnection(username, gameData.gameID(), WebSocketConnection.Role.PLAYER, color);
+    }
+
+    private ChessGame.TeamColor playerColor(GameData gameData, String username) {
+        if (username != null && username.equals(gameData.whiteUsername())) {
+            return ChessGame.TeamColor.WHITE;
+        }
+        if (username != null && username.equals(gameData.blackUsername())) {
+            return ChessGame.TeamColor.BLACK;
+        }
+        return null;
+    }
+
+    private void send(WsContext ctx, Object message) {
+        ctx.send(gson.toJson(message));
+    }
+
+    private void sendError(WsContext ctx, String message) {
+        String errorMessage = (message == null || message.isBlank()) ? "Error: unknown error" : message;
+        if (!errorMessage.toLowerCase().contains("error")) {
+            errorMessage = "Error: " + errorMessage;
+        }
+        send(ctx, new ErrorMessage(errorMessage));
+    }
+
 }
