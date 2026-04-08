@@ -157,6 +157,12 @@ public final class GameWebSocketHandler {
         gameDAO.updateGame(updated);
 
         broadcast(gameId, new LoadGameMessage(updated));
+        notifyOthers(gameId, ctx, auth.username() + " made a move " + move);
+
+        String extra = extraStateNotification(game);
+        if (extra != null) {
+            broadcast(gameId, new NotificationMessage(extra));
+        }
     }
 
     private GameData requireGame(int gameId) throws ServiceException, DataAccessException {
@@ -225,6 +231,20 @@ public final class GameWebSocketHandler {
             return " connected as an observer";
         }
         return " connected as " + connection.color();
+    }
+
+    private String extraStateNotification(ChessGame game) {
+        ChessGame.TeamColor toMove = game.getTeamTurn();
+        if (game.isInCheckmate(toMove)) {
+            return toMove + " is in checkmate";
+        }
+        if (game.isInStalemate(toMove)) {
+            return "Stalemate";
+        }
+        if (game.isInCheck(toMove)) {
+            return toMove + " is in check";
+        }
+        return null;
     }
 
     private void notifyOthers(int gameId, WsContext sender, String message) {
