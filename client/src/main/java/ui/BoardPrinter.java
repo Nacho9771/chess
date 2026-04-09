@@ -13,8 +13,8 @@ public class BoardPrinter {
     private static final String WHITE_PIECE_TEXT = EscapeSequences.SET_TEXT_COLOR_RED;
     private static final String BLACK_PIECE_TEXT = EscapeSequences.SET_TEXT_COLOR_BLUE;
 
-    public void drawBoard(ChessGame.TeamColor view) {
-        ChessGame game = new ChessGame();
+    public void drawBoard(ChessGame game, ChessGame.TeamColor view) {
+        ChessGame gameToDraw = game == null ? new ChessGame() : game;
 
         int startRow = (view == ChessGame.TeamColor.WHITE) ? 8 : 1;
         int endRow = (view == ChessGame.TeamColor.WHITE) ? 1 : 8;
@@ -27,13 +27,17 @@ public class BoardPrinter {
         printFileLabels(range(startCol, endCol, colStep));
 
         for (int r = startRow; r != endRow + rowStep; r += rowStep) {
-            printBoardRow(game, r, range(startCol, endCol, colStep));
+            printBoardRow(gameToDraw, r, range(startCol, endCol, colStep));
         }
 
         printFileLabels(range(startCol, endCol, colStep));
 
         System.out.print(EscapeSequences.RESET_BG_COLOR + EscapeSequences.RESET_TEXT_COLOR);
         System.out.println();
+    }
+
+    public void drawBoard(ChessGame.TeamColor view) {
+        drawBoard(new ChessGame(), view);
     }
 
     private int[] range(int start, int end, int step) {

@@ -70,6 +70,16 @@ public class ServerFacade {
         makeRequest("PUT", "/game", authToken, request, null);
     }
 
+    public String getWebSocketUrl() {
+        if (serverUrl.startsWith("https://")) {
+            return "wss://" + serverUrl.substring("https://".length()) + "/ws";
+        }
+        if (serverUrl.startsWith("http://")) {
+            return "ws://" + serverUrl.substring("http://".length()) + "/ws";
+        }
+        return "ws://" + serverUrl + "/ws";
+    }
+
     private <T> T makeRequest(String method, String path, String authToken, Object requestBody, Class<T> responseClass)
             throws ServerFacadeException {
         HttpURLConnection connection = null;

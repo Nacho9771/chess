@@ -2,12 +2,21 @@ package ui;
 //making regrade possible
 
 import chess.ChessGame;
+import chess.ChessMove;
+import chess.ChessPiece;
+import chess.ChessPosition;
 import client.GameSummary;
+import client.GameWebSocketClient;
 import client.ServerFacade;
 import client.ServerFacadeException;
 import model.AuthData;
+import model.GameData;
+import websocket.messages.ErrorMessage;
+import websocket.messages.LoadGameMessage;
+import websocket.messages.NotificationMessage;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Scanner;
@@ -20,6 +29,8 @@ public class ChessClient {
     private String authToken;
     private String username;
     private List<GameSummary> lastListedGames = new ArrayList<>();
+    private GameSession gameSession;
+    private GameWebSocketClient webSocketClient;
 
     public ChessClient(ServerFacade serverFacade) {
         this.serverFacade = serverFacade;
@@ -67,6 +78,10 @@ public class ChessClient {
     }
 
     private boolean handlePostloginCommand(String input) {
+        if (gameSession != null) {
+            return handleInGameCommand(input);
+        }
+
         String command = normalizeCommand(input);
 
         return switch (command) {
@@ -144,6 +159,8 @@ public class ChessClient {
             if (authToken == null) {
                 return;
             }
+            gameSession = null;
+            closeWebSocket();
             serverFacade.logout(authToken);
             authToken = null;
             username = null;
@@ -155,6 +172,46 @@ public class ChessClient {
         } catch (ServerFacadeException ex) {
             System.out.println(ex.getMessage());
         }
+    }
+
+    private boolean handleInGameCommand(String input) {
+        String command = normalizeCommand(input);
+
+        return switch (command) {
+            case "help" -> {
+                printInGameHelp();
+                yield true;
+            }
+            case "redraw", "redraw board" -> {
+                redrawCurrentBoard();
+                yield true;
+            }
+            case "leave" -> {
+                leaveCurrentGame();
+                yield true;
+            }
+            case "resign" -> {
+                resignCurrentGame();
+                yield true;
+            }
+            case "move", "make move" -> {
+                makeMove();
+                yield true;
+            }
+            case "highlight", "highlight legal moves" -> {
+                highlightLegalMoves();
+                yield true;
+            }
+            case "quit" -> {
+                shutdownCleanup();
+                yield false;
+            }
+            case "" -> true;
+            default -> {
+                System.out.println("Error: unknown command. Type 'help' to see options.");
+                yield true;
+            }
+        };
     }
 
     private void createGame() {
@@ -203,7 +260,7 @@ public class ChessClient {
         try {
             serverFacade.joinGame(authToken, color.name(), selectedGame.gameID());
             System.out.printf("Joined '%s' as %s.%n", selectedGame.gameName(), color.name().toLowerCase(Locale.ROOT));
-            boardPrinter.drawBoard(color);
+            enterGame(selectedGame, color, false);
         } catch (ServerFacadeException ex) {
             System.out.println(ex.getMessage());
         }
@@ -215,8 +272,12 @@ public class ChessClient {
             return;
         }
 
-        System.out.printf("Observing '%s'.%n", selectedGame.gameName());
-        boardPrinter.drawBoard(ChessGame.TeamColor.WHITE);
+        try {
+            System.out.printf("Observing '%s'.%n", selectedGame.gameName());
+            enterGame(selectedGame, ChessGame.TeamColor.WHITE, true);
+        } catch (ServerFacadeException ex) {
+            System.out.println(ex.getMessage());
+        }
     }
 
     private GameSummary promptForGameSelection() {
@@ -272,7 +333,14 @@ public class ChessClient {
     }
 
     private void printPrompt() {
-        String state = authToken == null ? "prelogin" : username;
+        String state;
+        if (authToken == null) {
+            state = "prelogin";
+        } else if (gameSession != null) {
+            state = gameSession.promptLabel();
+        } else {
+            state = username;
+        }
         System.out.printf("[%s] >>> ", state);
     }
 
@@ -305,13 +373,280 @@ public class ChessClient {
         System.out.println("quit - exit the program");
     }
 
+    private void printInGameHelp() {
+        if (gameSession == null) {
+            printPostloginHelp();
+            return;
+        }
+
+        System.out.println("help - show available commands");
+        System.out.println("redraw board - display the current board");
+        System.out.println("highlight legal moves - show valid moves for a piece");
+        if (!gameSession.observer()) {
+            System.out.println("make move - make a move on your turn");
+            System.out.println("resign - resign the current game");
+        }
+        System.out.println("leave - leave the current game");
+        System.out.println("quit - exit the program");
+    }
+
+    private void enterGame(GameSummary game, ChessGame.TeamColor perspective, boolean observer) throws ServerFacadeException {
+        closeWebSocket();
+        webSocketClient = new GameWebSocketClient(
+                serverFacade.getWebSocketUrl(),
+                this::handleLoadGame,
+                this::handleNotification,
+                this::handleErrorMessage,
+                this::handleWebSocketError,
+                this::handleWebSocketClosed
+        );
+        gameSession = new GameSession(game.gameID(), game.gameName(), perspective, observer, null);
+        webSocketClient.connect(authToken, game.gameID());
+        printInGameHelp();
+    }
+
+    private synchronized void handleLoadGame(LoadGameMessage message) {
+        if (gameSession == null) {
+            return;
+        }
+        gameSession = gameSession.withGame(message.getGame());
+        redrawCurrentBoard();
+        printPrompt();
+    }
+
+    private void handleWebSocketError(Throwable error) {
+        System.out.println("Error: websocket connection failed");
+        if (error != null && error.getMessage() != null && !error.getMessage().isBlank()) {
+            System.out.println(error.getMessage());
+        }
+        if (authToken != null) {
+            printPrompt();
+        }
+    }
+
+    private synchronized void handleWebSocketClosed(String reason) {
+        if (gameSession == null || authToken == null) {
+            return;
+        }
+
+        try {
+            GameSession session = gameSession;
+            webSocketClient = new GameWebSocketClient(
+                    serverFacade.getWebSocketUrl(),
+                    this::handleLoadGame,
+                    this::handleNotification,
+                    this::handleErrorMessage,
+                    this::handleWebSocketError,
+                    this::handleWebSocketClosed
+            );
+            webSocketClient.connect(authToken, session.gameId());
+        } catch (ServerFacadeException ex) {
+            System.out.println("Error: websocket closed");
+            if (reason != null && !reason.isBlank()) {
+                System.out.println(reason);
+            }
+            System.out.println(ex.getMessage());
+            printPrompt();
+        }
+    }
+
+    private synchronized void handleNotification(NotificationMessage message) {
+        System.out.println(message.getMessage());
+        if (authToken != null) {
+            printPrompt();
+        }
+    }
+
+    private synchronized void handleErrorMessage(ErrorMessage message) {
+        System.out.println(message.getErrorMessage());
+        if (authToken != null) {
+            printPrompt();
+        }
+    }
+
+    private synchronized void redrawCurrentBoard() {
+        if (gameSession == null) {
+            return;
+        }
+        ChessGame game = gameSession.currentGame() == null ? null : gameSession.currentGame().game();
+        boardPrinter.drawBoard(game, gameSession.perspective());
+    }
+
+    private void leaveCurrentGame() {
+        if (gameSession == null) {
+            return;
+        }
+        if (webSocketClient != null) {
+            try {
+                webSocketClient.leave(authToken, gameSession.gameId());
+            } catch (ServerFacadeException ex) {
+                System.out.println(ex.getMessage());
+            }
+        }
+        gameSession = null;
+        closeWebSocket();
+        printPostloginHelp();
+    }
+
+    private void resignCurrentGame() {
+        if (gameSession == null || gameSession.observer()) {
+            System.out.println("Error: observers cannot resign");
+            return;
+        }
+        if (webSocketClient != null) {
+            try {
+                webSocketClient.resign(authToken, gameSession.gameId());
+            } catch (ServerFacadeException ex) {
+                System.out.println(ex.getMessage());
+            }
+        }
+    }
+
+    private void makeMove() {
+        if (gameSession == null) {
+            return;
+        }
+        if (gameSession.observer()) {
+            System.out.println("Error: observers cannot make moves");
+            return;
+        }
+
+        ChessPosition start = parsePosition(prompt("From"));
+        ChessPosition end = parsePosition(prompt("To"));
+        if (start == null || end == null) {
+            System.out.println("Error: positions must be like e2 or h8");
+            return;
+        }
+
+        ChessPiece.PieceType promotion = null;
+        if (requiresPromotion(start, end)) {
+            promotion = parsePromotion(prompt("Promotion piece (queen, rook, bishop, knight)"));
+        }
+        if (promotion == ChessPiece.PieceType.KING || promotion == ChessPiece.PieceType.PAWN) {
+            System.out.println("Error: invalid promotion piece");
+            return;
+        }
+
+        if (webSocketClient != null) {
+            try {
+                webSocketClient.makeMove(authToken, gameSession.gameId(), new ChessMove(start, end, promotion));
+            } catch (ServerFacadeException ex) {
+                System.out.println(ex.getMessage());
+            }
+        }
+    }
+
+    private boolean requiresPromotion(ChessPosition start, ChessPosition end) {
+        if (gameSession == null || gameSession.currentGame() == null) {
+            return false;
+        }
+
+        ChessPiece piece = gameSession.currentGame().game().getBoard().getPiece(start);
+        if (piece == null || piece.getPieceType() != ChessPiece.PieceType.PAWN) {
+            return false;
+        }
+
+        int promotionRow = piece.getTeamColor() == ChessGame.TeamColor.WHITE ? 8 : 1;
+        return end.getRow() == promotionRow;
+    }
+
+    private void highlightLegalMoves() {
+        if (gameSession == null || gameSession.currentGame() == null) {
+            System.out.println("Error: game state is not loaded yet");
+            return;
+        }
+
+        ChessPosition position = parsePosition(prompt("Piece position"));
+        if (position == null) {
+            System.out.println("Error: position must be like e2 or h8");
+            return;
+        }
+
+        Collection<ChessMove> moves = gameSession.currentGame().game().validMoves(position);
+        if (moves == null || moves.isEmpty()) {
+            System.out.println("No legal moves.");
+            return;
+        }
+
+        StringBuilder output = new StringBuilder("Legal moves:");
+        for (ChessMove move : moves) {
+            output.append(' ').append(formatPosition(move.getEndPosition()));
+            if (move.getPromotionPiece() != null) {
+                output.append('(').append(move.getPromotionPiece().name().toLowerCase(Locale.ROOT)).append(')');
+            }
+        }
+        System.out.println(output);
+    }
+
+    private ChessPosition parsePosition(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String normalized = value.trim().toLowerCase(Locale.ROOT);
+        if (normalized.length() != 2) {
+            return null;
+        }
+
+        char file = normalized.charAt(0);
+        char rank = normalized.charAt(1);
+        if (file < 'a' || file > 'h' || rank < '1' || rank > '8') {
+            return null;
+        }
+
+        return new ChessPosition(rank - '0', (file - 'a') + 1);
+    }
+
+    private ChessPiece.PieceType parsePromotion(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        return switch (value.trim().toLowerCase(Locale.ROOT)) {
+            case "queen" -> ChessPiece.PieceType.QUEEN;
+            case "rook" -> ChessPiece.PieceType.ROOK;
+            case "bishop" -> ChessPiece.PieceType.BISHOP;
+            case "knight" -> ChessPiece.PieceType.KNIGHT;
+            default -> ChessPiece.PieceType.KING;
+        };
+    }
+
+    private String formatPosition(ChessPosition position) {
+        return String.valueOf((char) ('a' + position.getColumn() - 1)) + position.getRow();
+    }
+
+    private void closeWebSocket() {
+        if (webSocketClient != null) {
+            webSocketClient.close();
+            webSocketClient = null;
+        }
+    }
+
     private void shutdownCleanup() {
         try {
+            GameSession session = gameSession;
+            gameSession = null;
+            if (session != null && webSocketClient != null) {
+                webSocketClient.leave(authToken, session.gameId());
+            }
+            closeWebSocket();
             if (authToken != null) {
                 serverFacade.logout(authToken);
             }
         } catch (ServerFacadeException ignored) {
         }
     }
+
+    private record GameSession(int gameId, String gameName, ChessGame.TeamColor perspective, boolean observer,
+                               GameData currentGame) {
+        private GameSession withGame(GameData gameData) {
+            return new GameSession(gameId, gameName, perspective, observer, gameData);
+        }
+
+        private String promptLabel() {
+            return observer ? gameName + ":observe" : gameName + ":" + perspective.name().toLowerCase(Locale.ROOT);
+        }
+    }
+
 }
 
