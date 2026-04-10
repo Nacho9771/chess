@@ -1,20 +1,32 @@
 package ui;
 
 import chess.ChessGame;
+import chess.ChessMove;
 import chess.ChessPiece;
 import chess.ChessPosition;
+
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 public class BoardPrinter {
 
     private static final String LIGHT_SQUARE = EscapeSequences.SET_BG_COLOR_WHITE;
     private static final String DARK_SQUARE = EscapeSequences.SET_BG_COLOR_DARK_GREEN;
+    private static final String LIGHT_HIGHLIGHT_SQUARE = EscapeSequences.SET_BG_COLOR_LIGHT_BLUE;
+    private static final String DARK_HIGHLIGHT_SQUARE = EscapeSequences.SET_BG_COLOR_DARK_BLUE;
     private static final String BORDER_BACKGROUND = EscapeSequences.SET_BG_COLOR_BLACK;
     private static final String BORDER_TEXT = EscapeSequences.SET_TEXT_COLOR_WHITE;
     private static final String WHITE_PIECE_TEXT = EscapeSequences.SET_TEXT_COLOR_RED;
     private static final String BLACK_PIECE_TEXT = EscapeSequences.SET_TEXT_COLOR_BLUE;
 
     public void drawBoard(ChessGame game, ChessGame.TeamColor view) {
+        drawBoard(game, view, Set.of());
+    }
+
+    public void drawBoard(ChessGame game, ChessGame.TeamColor view, Collection<ChessMove> highlightedMoves) {
         ChessGame gameToDraw = game == null ? new ChessGame() : game;
+        Set<ChessPosition> highlightedSquares = toHighlightedSquares(highlightedMoves);
 
         int startRow = (view == ChessGame.TeamColor.WHITE) ? 8 : 1;
         int endRow = (view == ChessGame.TeamColor.WHITE) ? 1 : 8;
@@ -27,7 +39,7 @@ public class BoardPrinter {
         printFileLabels(range(startCol, endCol, colStep));
 
         for (int r = startRow; r != endRow + rowStep; r += rowStep) {
-            printBoardRow(gameToDraw, r, range(startCol, endCol, colStep));
+            printBoardRow(gameToDraw, r, range(startCol, endCol, colStep), highlightedSquares);
         }
 
         printFileLabels(range(startCol, endCol, colStep));
@@ -38,6 +50,20 @@ public class BoardPrinter {
 
     public void drawBoard(ChessGame.TeamColor view) {
         drawBoard(new ChessGame(), view);
+    }
+
+    private Set<ChessPosition> toHighlightedSquares(Collection<ChessMove> highlightedMoves) {
+        Set<ChessPosition> positions = new HashSet<>();
+        if (highlightedMoves == null) {
+            return positions;
+        }
+
+        for (ChessMove move : highlightedMoves) {
+            if (move != null && move.getEndPosition() != null) {
+                positions.add(move.getEndPosition());
+            }
+        }
+        return positions;
     }
 
     private int[] range(int start, int end, int step) {
@@ -60,16 +86,24 @@ public class BoardPrinter {
         System.out.println();
     }
 
-    private void printBoardRow(ChessGame game, int row, int[] columns) {
+    private void printBoardRow(ChessGame game, int row, int[] columns, Set<ChessPosition> highlightedSquares) {
         System.out.print(BORDER_BACKGROUND + BORDER_TEXT + " " + row + " ");
         for (int column : columns) {
-            String squareColor = isLightSquare(row, column) ? LIGHT_SQUARE : DARK_SQUARE;
+            String squareColor = squareColor(row, column, highlightedSquares);
             System.out.print(squareColor);
             System.out.print(pieceDisplay(game, row, column));
         }
         System.out.print(BORDER_BACKGROUND + BORDER_TEXT + " " + row + " ");
         System.out.print(EscapeSequences.RESET_BG_COLOR + EscapeSequences.RESET_TEXT_COLOR);
         System.out.println();
+    }
+
+    private String squareColor(int row, int column, Set<ChessPosition> highlightedSquares) {
+        boolean highlighted = highlightedSquares.contains(new ChessPosition(row, column));
+        if (highlighted) {
+            return isLightSquare(row, column) ? LIGHT_HIGHLIGHT_SQUARE : DARK_HIGHLIGHT_SQUARE;
+        }
+        return isLightSquare(row, column) ? LIGHT_SQUARE : DARK_SQUARE;
     }
 
     private boolean isLightSquare(int row, int column) {

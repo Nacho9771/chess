@@ -493,6 +493,10 @@ public class ChessClient {
             System.out.println("Error: observers cannot resign");
             return;
         }
+        if (!confirmResignation()) {
+            System.out.println("Resignation cancelled.");
+            return;
+        }
         if (webSocketClient != null) {
             try {
                 webSocketClient.resign(authToken, gameSession.gameId());
@@ -567,15 +571,20 @@ public class ChessClient {
             System.out.println("No legal moves.");
             return;
         }
+        boardPrinter.drawBoard(gameSession.currentGame().game(), gameSession.perspective(), moves);
+    }
 
-        StringBuilder output = new StringBuilder("Legal moves:");
-        for (ChessMove move : moves) {
-            output.append(' ').append(formatPosition(move.getEndPosition()));
-            if (move.getPromotionPiece() != null) {
-                output.append('(').append(move.getPromotionPiece().name().toLowerCase(Locale.ROOT)).append(')');
+    private boolean confirmResignation() {
+        while (true) {
+            String confirmation = prompt("Are you sure you want to resign? y/n");
+            if (confirmation.equalsIgnoreCase("y")) {
+                return true;
             }
+            if (confirmation.equalsIgnoreCase("n")) {
+                return false;
+            }
+            System.out.println("Please enter y or n.");
         }
-        System.out.println(output);
     }
 
     private ChessPosition parsePosition(String value) {
@@ -609,10 +618,6 @@ public class ChessClient {
             case "knight" -> ChessPiece.PieceType.KNIGHT;
             default -> ChessPiece.PieceType.KING;
         };
-    }
-
-    private String formatPosition(ChessPosition position) {
-        return String.valueOf((char) ('a' + position.getColumn() - 1)) + position.getRow();
     }
 
     private void closeWebSocket() {

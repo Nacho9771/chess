@@ -161,7 +161,7 @@ public final class GameWebSocketHandler {
         broadcast(gameId, new LoadGameMessage(updated));
         notifyOthers(gameId, ctx, auth.username() + " made a move " + move);
 
-        String extra = extraStateNotification(game);
+        String extra = extraStateNotification(gameId, updated);
         if (extra != null) {
             broadcast(gameId, new NotificationMessage(extra));
         }
@@ -228,16 +228,41 @@ public final class GameWebSocketHandler {
         return " connected as " + connection.color();
     }
 
-    private String extraStateNotification(ChessGame game) {
+    private String extraStateNotification(int gameId, GameData gameData) {
+        ChessGame game = gameData.game();
         ChessGame.TeamColor toMove = game.getTeamTurn();
         if (game.isInCheckmate(toMove)) {
-            return toMove + " is in checkmate";
+            return colorStateMessage(gameId, gameData, toMove, "is in checkmate");
         }
         if (game.isInStalemate(toMove)) {
             return "Stalemate";
         }
         if (game.isInCheck(toMove)) {
-            return toMove + " is in check";
+            return colorStateMessage(gameId, gameData, toMove, "is in check");
+        }
+        return null;
+    }
+
+    private String colorStateMessage(int gameId, GameData gameData, ChessGame.TeamColor color, String suffix) {
+        String username = connectedPlayerUsername(gameId, color);
+        if (username == null || username.isBlank()) {
+            username = color == ChessGame.TeamColor.WHITE ? gameData.whiteUsername() : gameData.blackUsername();
+        }
+        if (username == null || username.isBlank()) {
+            return color + " " + suffix;
+        }
+        return color + " (" + username + ") " + suffix;
+    }
+
+    private String connectedPlayerUsername(int gameId, ChessGame.TeamColor color) {
+        for (WsContext ctx : hub.contextsInGame(gameId)) {
+            WebSocketConnection connection = hub.get(ctx);
+            if (connection == null || connection.role() != WebSocketConnection.Role.PLAYER) {
+                continue;
+            }
+            if (connection.color() == color) {
+                return connection.username();
+            }
         }
         return null;
     }
